@@ -185,6 +185,7 @@ class MasterClusterServiceImpl : public MasterServiceBase, public MasterClusterI
       *entry->mutable_registration() = std::move(*ts_info.mutable_registration());
       bool isPrimary = server_->ts_manager()->IsTsInCluster(desc, placement_uuid);
       entry->set_isfromreadreplica(!isPrimary);
+      
     }
     rpc.RespondSuccess();
   }

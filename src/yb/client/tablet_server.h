@@ -57,6 +57,7 @@ struct YBTabletServerPlacementInfo {
   bool is_primary;
   std::string public_ip;
   uint16_t pg_port;
+  std::string test;
 
   template <class PB>
   static YBTabletServerPlacementInfo FromPB(const PB& pb) {
@@ -68,6 +69,7 @@ struct YBTabletServerPlacementInfo {
       .is_primary = pb.is_primary(),
       .public_ip = pb.public_ip(),
       .pg_port = static_cast<uint16_t>(pb.pg_port()),
+      .test = pb.test(),
     };
   }
 
@@ -80,6 +82,7 @@ struct YBTabletServerPlacementInfo {
     pb->set_is_primary(is_primary);
     pb->set_public_ip(public_ip);
     pb->set_pg_port(pg_port);
+    pb->set_test(test);
   }
 };
 

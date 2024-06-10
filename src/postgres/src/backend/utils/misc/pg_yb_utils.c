@@ -2366,7 +2366,7 @@ yb_servers(PG_FUNCTION_ARGS)
 {
 	FuncCallContext *funcctx;
 
-	int expected_ncols = 9;
+	int expected_ncols = 10;
 
 	static int ncols = 0;
 
@@ -2404,6 +2404,8 @@ yb_servers(PG_FUNCTION_ARGS)
 			TupleDescInitEntry(tupdesc, (AttrNumber) 9,
 							   "uuid", TEXTOID, -1, 0);
 		}
+		TupleDescInitEntry(tupdesc, (AttrNumber) 10,
+						   "test", TEXTOID, -1, 0);
 		funcctx->tuple_desc = BlessTupleDesc(tupdesc);
 
 		YBCServerDescriptor *servers = NULL;
@@ -2424,6 +2426,7 @@ yb_servers(PG_FUNCTION_ARGS)
 		YBCServerDescriptor *server = (YBCServerDescriptor *)funcctx->user_fctx + cntr;
 		bool is_primary = server->is_primary;
 		const char *node_type = is_primary ? "primary" : "read_replica";
+		//const char *test_value = "test!!!!";
 
 		// TODO: Remove hard coding of port and num_connections
 		values[0] = CStringGetTextDatum(server->host);
@@ -2438,6 +2441,7 @@ yb_servers(PG_FUNCTION_ARGS)
 		{
 			values[8] = CStringGetTextDatum(server->uuid);
 		}
+		values[9] = CStringGetTextDatum(server->test);
 		memset(nulls, 0, sizeof(nulls));
 		tuple = heap_form_tuple(funcctx->tuple_desc, values, nulls);
 		SRF_RETURN_NEXT(funcctx, HeapTupleGetDatum(tuple));

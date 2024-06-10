@@ -2031,6 +2031,7 @@ Result<TabletServersInfo> YBClient::ListLiveTabletServers(bool primary_only) {
       }
     }
     out.pg_port = entry.registration().common().pg_port();
+    out.test = "testT";
   }
 
   return result;

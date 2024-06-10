@@ -1971,6 +1971,7 @@ YBCStatus YBCGetTabletServerHosts(YBCServerDescriptor **servers, size_t *count) 
         .is_primary = info.is_primary,
         .pg_port = info.pg_port,
         .uuid = YBCPAllocStdString(info.server.uuid),
+        .test = YBCPAllocStdString(info.test),
       };
       ++dest;
     }

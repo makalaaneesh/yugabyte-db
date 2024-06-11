@@ -1036,7 +1036,11 @@ class PgClientServiceImpl::Impl {
     auto tablet_servers = VERIFY_RESULT(client().ListLiveTabletServers(req.primary_only()));
     for (const auto& server : tablet_servers) {
       server.ToPB(resp->mutable_servers()->Add());
-      const std::string test_value = "test from pg_client_service";
+    }
+    auto remote_tservers = VERIFY_RESULT(tablet_server_.GetRemoteTabletServers());
+    
+    for (const auto& remote_tserver : remote_tservers) {
+      const std::string test_value = *(resp->mutable_servers(0)->mutable_test()) + "|" + remote_tserver->permanent_uuid() + "," + std::to_string(remote_tserver->IsLocal());
       resp->mutable_servers(0)->set_test(test_value);
     }
     return Status::OK();

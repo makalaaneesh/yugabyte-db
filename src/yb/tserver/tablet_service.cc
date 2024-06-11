@@ -3068,6 +3068,14 @@ void TabletServiceImpl::CheckTserverTabletHealth(const CheckTserverTabletHealthR
   context.RespondSuccess();
 }
 
+void TabletServiceImpl::GetMetrics(const GetMetricsRequestPB* req,
+                                   GetMetricsResponsePB* resp,
+                                   rpc::RpcContext context) {
+  const string cpu_metrics = "cpu=x";
+  resp->set_metrics(cpu_metrics);
+  context.RespondSuccess();
+}
+
 void TabletServiceImpl::GetLockStatus(const GetLockStatusRequestPB* req,
                                       GetLockStatusResponsePB* resp,
                                       rpc::RpcContext context) {

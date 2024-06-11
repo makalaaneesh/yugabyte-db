@@ -1039,8 +1039,15 @@ class PgClientServiceImpl::Impl {
     }
     auto remote_tservers = VERIFY_RESULT(tablet_server_.GetRemoteTabletServers());
     
+    rpc::RpcController controller;
     for (const auto& remote_tserver : remote_tservers) {
-      const std::string test_value = *(resp->mutable_servers(0)->mutable_test()) + "|" + remote_tserver->permanent_uuid() + "," + std::to_string(remote_tserver->IsLocal());
+      GetMetricsRequestPB mreq;
+      GetMetricsResponsePB mresp;
+      RETURN_NOT_OK(remote_tserver->InitProxy(&client()));
+      auto proxy = remote_tserver->proxy();
+      controller.Reset();
+      RETURN_NOT_OK(proxy->GetMetrics(mreq, &mresp, &controller));
+      const std::string test_value = *(resp->mutable_servers(0)->mutable_test()) + "|" + *(mresp.mutable_metrics());
       resp->mutable_servers(0)->set_test(test_value);
     }
     return Status::OK();

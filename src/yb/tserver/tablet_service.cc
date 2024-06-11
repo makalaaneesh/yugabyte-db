@@ -3071,7 +3071,12 @@ void TabletServiceImpl::CheckTserverTabletHealth(const CheckTserverTabletHealthR
 void TabletServiceImpl::GetMetrics(const GetMetricsRequestPB* req,
                                    GetMetricsResponsePB* resp,
                                    rpc::RpcContext context) {
-  const string cpu_metrics = "cpu=x";
+          
+  char hostname[500];
+  if (gethostname(hostname, 500) != 0) {
+    strcpy(hostname, "unknown");
+  }
+  const string cpu_metrics = "hostname=" + std::string(hostname);
   resp->set_metrics(cpu_metrics);
   context.RespondSuccess();
 }

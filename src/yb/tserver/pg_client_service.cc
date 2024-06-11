@@ -1033,11 +1033,9 @@ class PgClientServiceImpl::Impl {
   Status ListLiveTabletServers(
       const PgListLiveTabletServersRequestPB& req, PgListLiveTabletServersResponsePB* resp,
       rpc::RpcContext* context) {
-    auto tablet_servers = VERIFY_RESULT(client().ListLiveTabletServers(req.primary_only()));
-    for (const auto& server : tablet_servers) {
-      server.ToPB(resp->mutable_servers()->Add());
-    }
+    
     auto remote_tservers = VERIFY_RESULT(tablet_server_.GetRemoteTabletServers());
+    std::map<std::string, std::string> tserver_uuid_metrics;
     
     rpc::RpcController controller;
     for (const auto& remote_tserver : remote_tservers) {
@@ -1047,9 +1045,25 @@ class PgClientServiceImpl::Impl {
       auto proxy = remote_tserver->proxy();
       controller.Reset();
       RETURN_NOT_OK(proxy->GetMetrics(mreq, &mresp, &controller));
-      const std::string test_value = *(resp->mutable_servers(0)->mutable_test()) + "|" + *(mresp.mutable_metrics());
-      resp->mutable_servers(0)->set_test(test_value);
+      tserver_uuid_metrics[remote_tserver->permanent_uuid()] = mresp.metrics();
+      // const std::string test_value = *(resp->mutable_servers(0)->mutable_test()) + "|" + *(mresp.mutable_metrics());
+      // resp->mutable_servers(0)->set_test(test_value);
     }
+
+    auto tablet_servers = VERIFY_RESULT(client().ListLiveTabletServers(req.primary_only()));
+    int index = 0;
+    for (const auto& server : tablet_servers) {
+      server.ToPB(resp->mutable_servers()->Add());
+      if (tserver_uuid_metrics.find(resp->servers(index).uuid()) != tserver_uuid_metrics.end()) {
+
+        resp->mutable_servers(index)->set_test(tserver_uuid_metrics[resp->servers(index).uuid()]);
+      }
+      // const std::string test_value = *(resp->mutable_servers(index)->mutable_test()) + "|" + *(mresp.mutable_metrics());
+      // resp->mutable_servers(0)->set_test(test_value);
+      index++;
+    }
+
+
     return Status::OK();
   }
 

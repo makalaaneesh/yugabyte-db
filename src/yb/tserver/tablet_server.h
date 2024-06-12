@@ -186,6 +186,8 @@ class TabletServer : public DbServerBase, public TabletServerIf {
     return shared_object();
   }
 
+  std::string GetMetrics() const override;
+
   Status PopulateLiveTServers(const master::TSHeartbeatResponsePB& heartbeat_resp) EXCLUDES(lock_);
 
   Status GetLiveTServers(

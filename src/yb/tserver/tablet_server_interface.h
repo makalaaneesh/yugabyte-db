@@ -109,6 +109,9 @@ class TabletServerIf : public LocalTabletServer {
     tserver::PgYCQLStatementStatsResponsePB* resp) const = 0;
 
   virtual Result<std::vector<tablet::TabletStatusPB>> GetLocalTabletsMetadata() const = 0;
+
+  virtual std::string GetMetrics() const = 0;
+
 };
 
 } // namespace tserver

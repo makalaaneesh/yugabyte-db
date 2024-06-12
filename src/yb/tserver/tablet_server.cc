@@ -741,6 +741,18 @@ Status TabletServer::GetLiveTServers(std::vector<master::TSInformationPB> *live_
   return Status::OK();
 }
 
+std::string TabletServer::GetMetrics() const {
+  // return "test metrics tserver...";
+  if (!metrics_snapshotter_) {
+    return "Metrics snapshotter is not enabled";
+  }
+  std::map<std::string, double> cpu_usage = metrics_snapshotter_->GetCPUUsageInInterval(500);
+  // std::map<std::string, double> cpu_usage;
+  // cpu_usage["user"] = -1;
+  // cpu_usage["system"] = -1;
+  return "cpu_user=" + std::to_string(cpu_usage["user"]) + ", cpu_system=" + std::to_string(cpu_usage["system"]);
+}
+
 Result<std::vector<RemoteTabletServerPtr>> TabletServer::GetRemoteTabletServers() const {
   SharedLock l(lock_);
   std::vector<RemoteTabletServerPtr> remote_tservers;

@@ -14,6 +14,7 @@
 #pragma once
 
 #include <memory>
+#include <map>
 
 #include "yb/gutil/macros.h"
 
@@ -30,6 +31,8 @@ class MetricsSnapshotter {
   MetricsSnapshotter(const TabletServerOptions& options, TabletServer* server);
   Status Start();
   Status Stop();
+
+  std::map<std::string, double> GetCPUUsageInInterval(int ms);
 
   ~MetricsSnapshotter();
 

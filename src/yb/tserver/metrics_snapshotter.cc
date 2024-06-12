@@ -19,6 +19,7 @@
 #include <vector>
 #include <mutex>
 #include <set>
+#include <map>
 
 #include <chrono>
 #include <thread>
@@ -140,6 +141,8 @@ class MetricsSnapshotter::Thread {
   Status Start();
   Status Stop();
 
+  std::map<std::string, double> GetCPUUsageInInterval(int ms);
+
  private:
   void RunThread();
   int GetMillisUntilNextMetricsSnapshot() const;
@@ -162,6 +165,7 @@ class MetricsSnapshotter::Thread {
 
   // Retrieves current cpu usage information.
   Result<vector<uint64_t>> GetCpuUsage();
+  
 
   // The server for which we are collecting metrics.
   TabletServer* const server_;
@@ -215,6 +219,10 @@ Status MetricsSnapshotter::Start() {
 }
 Status MetricsSnapshotter::Stop() {
   return thread_->Stop();
+}
+
+std::map<std::string, double> MetricsSnapshotter::GetCPUUsageInInterval(int ms){
+  return thread_->GetCPUUsageInInterval(ms);
 }
 
 ////////////////////////////////////////////////////////////
@@ -508,6 +516,42 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
 
   FlushSession(session);
   return Status::OK();
+}
+
+std::map<std::string, double> MetricsSnapshotter::Thread::GetCPUUsageInInterval(int ms){
+  std::map<std::string, double> cpu_usage;
+  // cpu_usage["user"] = -5.0;
+  // cpu_usage["system"] = -5.0;
+  // return cpu_usage;
+  
+  auto cur_ticks = CHECK_RESULT(GetCpuUsage());
+  bool get_cpu_success = std::all_of(
+      cur_ticks.begin(), cur_ticks.end(), [](bool v) { return v > 0; });
+  if (get_cpu_success && first_run_cpu_ticks_) {
+    prev_ticks_ = cur_ticks;
+    first_run_cpu_ticks_ = false;
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    cur_ticks = CHECK_RESULT(GetCpuUsage());
+    get_cpu_success = std::all_of(
+        cur_ticks.begin(), cur_ticks.end(), [](bool v) { return v > 0; });
+  }
+
+  if (get_cpu_success) {
+    uint64_t total_ticks = cur_ticks[0] - prev_ticks_[0];
+    uint64_t user_ticks = cur_ticks[1] - prev_ticks_[1];
+    uint64_t system_ticks = cur_ticks[2] - prev_ticks_[2];
+    if (total_ticks <= 0) {
+      YB_LOG_EVERY_N_SECS(ERROR, 120) << Format("Failed to calculate CPU usage - "
+                                                "invalid total CPU ticks: $0.", total_ticks);
+    } else {
+      double cpu_usage_user = static_cast<double>(user_ticks) / total_ticks;
+      double cpu_usage_system = static_cast<double>(system_ticks) / total_ticks;
+      cpu_usage["user"] = cpu_usage_user;
+      cpu_usage["system"] = cpu_usage_system;
+    }
+  } 
+  return cpu_usage;
+
 }
 
 Result<vector<uint64_t>> MetricsSnapshotter::Thread::GetCpuUsage() {

@@ -215,5 +215,9 @@ Result<std::vector<tablet::TabletStatusPB>> MasterTabletServer::GetLocalTabletsM
   return STATUS_FORMAT(InternalError, "Unexpected call of GetLocalTabletsMetadata()");
 }
 
+std::string MasterTabletServer::GetMetrics() const {
+  return "Metrics not available for master tserver";
+}
+
 } // namespace master
 } // namespace yb

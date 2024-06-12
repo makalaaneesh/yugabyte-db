@@ -3076,7 +3076,8 @@ void TabletServiceImpl::GetMetrics(const GetMetricsRequestPB* req,
   if (gethostname(hostname, 500) != 0) {
     strcpy(hostname, "unknown");
   }
-  const string cpu_metrics = "hostname=" + std::string(hostname);
+  const int pid = getpid();
+  const string cpu_metrics = "hostname=" + std::string(hostname) + ":"+ std::to_string(pid);
   resp->set_metrics(cpu_metrics);
   context.RespondSuccess();
 }

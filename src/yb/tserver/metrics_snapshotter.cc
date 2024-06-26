@@ -460,7 +460,7 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
     auto cur_ticks = CHECK_RESULT(GetCpuUsage());
     bool get_cpu_success = std::all_of(
         cur_ticks.begin(), cur_ticks.end(), [](bool v) { return v > 0; });
-    if (get_cpu_success && first_run_cpu_ticks_) {
+    if (get_cpu_success) {
       prev_ticks_ = cur_ticks;
       first_run_cpu_ticks_ = false;
       std::this_thread::sleep_for(std::chrono::milliseconds(500));

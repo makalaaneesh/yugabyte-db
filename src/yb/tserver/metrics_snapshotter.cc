@@ -520,36 +520,35 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
 
 std::map<std::string, double> MetricsSnapshotter::Thread::GetCPUUsageInInterval(int ms){
   std::map<std::string, double> cpu_usage;
-  // cpu_usage["user"] = -5.0;
-  // cpu_usage["system"] = -5.0;
+  cpu_usage["user"] = -1;
+  cpu_usage["system"] = -1;
   // return cpu_usage;
   
-  auto cur_ticks = CHECK_RESULT(GetCpuUsage());
+  auto cur_ticks1 = CHECK_RESULT(GetCpuUsage());
+  vector<uint64_t> cur_ticks2;
   bool get_cpu_success = std::all_of(
-      cur_ticks.begin(), cur_ticks.end(), [](bool v) { return v > 0; });
-  if (get_cpu_success && first_run_cpu_ticks_) {
-    prev_ticks_ = cur_ticks;
-    first_run_cpu_ticks_ = false;
-    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-    cur_ticks = CHECK_RESULT(GetCpuUsage());
-    get_cpu_success = std::all_of(
-        cur_ticks.begin(), cur_ticks.end(), [](bool v) { return v > 0; });
-  }
-
+      cur_ticks1.begin(), cur_ticks1.end(), [](bool v) { return v > 0; });
   if (get_cpu_success) {
-    uint64_t total_ticks = cur_ticks[0] - prev_ticks_[0];
-    uint64_t user_ticks = cur_ticks[1] - prev_ticks_[1];
-    uint64_t system_ticks = cur_ticks[2] - prev_ticks_[2];
-    if (total_ticks <= 0) {
-      YB_LOG_EVERY_N_SECS(ERROR, 120) << Format("Failed to calculate CPU usage - "
-                                                "invalid total CPU ticks: $0.", total_ticks);
-    } else {
-      double cpu_usage_user = static_cast<double>(user_ticks) / total_ticks;
-      double cpu_usage_system = static_cast<double>(system_ticks) / total_ticks;
-      cpu_usage["user"] = cpu_usage_user;
-      cpu_usage["system"] = cpu_usage_system;
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    cur_ticks2 = CHECK_RESULT(GetCpuUsage());
+    get_cpu_success = std::all_of(
+        cur_ticks2.begin(), cur_ticks2.end(), [](bool v) { return v > 0; });
+    if (get_cpu_success){
+      uint64_t total_ticks = cur_ticks2[0] - cur_ticks1[0];
+      uint64_t user_ticks = cur_ticks2[1] - cur_ticks1[1];
+      uint64_t system_ticks = cur_ticks2[2] - cur_ticks1[2];
+      if (total_ticks <= 0) {
+        YB_LOG_EVERY_N_SECS(ERROR, 120) << Format("Failed to calculate CPU usage - "
+                                                  "invalid total CPU ticks: $0.", total_ticks);
+      } else {
+        double cpu_usage_user = static_cast<double>(user_ticks) / total_ticks;
+        double cpu_usage_system = static_cast<double>(system_ticks) / total_ticks;
+        cpu_usage["user"] = cpu_usage_user;
+        cpu_usage["system"] = cpu_usage_system;
+      }
     }
-  } 
+    
+  }
   return cpu_usage;
 
 }

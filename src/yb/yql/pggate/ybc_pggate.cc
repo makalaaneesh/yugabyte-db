@@ -2638,7 +2638,7 @@ YBCStatus YBCLocalTablets(YBCPgTabletsDescriptor** tablets, size_t* count) {
   return YBCStatusOK();
 }
 
-YBCStatus YBCServersMetrics(YBCPgServerMetricsInfo** serverMetricsInfo, size_t* count){
+YBCStatus YBCServersMetrics(YBCPgServerMetricsInfo** servers_metrics_info, size_t* count){
   const auto result = pgapi->ServersMetrics();
   if (!result.ok()) {
     return ToYBCStatus(result.status());

@@ -44,6 +44,7 @@ class YCQLStatementStatsProvider;
 namespace tserver {
 class PgYCQLStatementStatsRequestPB;
 class PgYCQLStatementStatsResponsePB;
+class ServerMetricsInfoPB;
 
 using CertificateReloader = std::function<Status(void)>;
 using PgConfigReloader = std::function<Status(void)>;
@@ -112,7 +113,7 @@ class TabletServerIf : public LocalTabletServer {
     tserver::PgYCQLStatementStatsResponsePB* resp) const = 0;
 
   virtual Result<std::vector<tablet::TabletStatusPB>> GetLocalTabletsMetadata() const = 0;
-  virtual Result<std::vector<ServerMetricsInfoPB>> GetServersMetrics() const = 0;
+  virtual Result<std::vector<tserver::ServerMetricsInfoPB>> GetServersMetrics() const = 0;
 };
 
 } // namespace tserver

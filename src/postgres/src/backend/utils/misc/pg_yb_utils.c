@@ -3558,15 +3558,14 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 	rsinfo->setResult = tupstore;
 	rsinfo->setDesc = tupdesc;
 
-	YBCPgServerMetricsInfo	*serverMetricsInfo = NULL;
+	YBCPgServerMetricsInfo	*servers_metrics_info = NULL;
 	size_t		num_servers = 0;
-	HandleYBStatus(YBCLocalTablets(&tablets, &num_tablets));
-	HandleYBStatus(YBCLocalTablets(&tablets, &num_tablets));
+	HandleYBStatus(YBCServersMetrics(&servers_metrics_info, &num_servers));
 
 	for (i = 0; i < num_servers; ++i)
 	{
 		// YBCPgTabletsDescriptor *tablet = (YBCPgTabletsDescriptor *)tablets + i;
-		YBCPgServerMetricsInfo *metricsInfo = (YBCPgServerMetricsInfo *)serverMetricsInfo + i;
+		YBCPgServerMetricsInfo *metricsInfo = (YBCPgServerMetricsInfo *)servers_metrics_info + i;
 		Datum		values[YB_SERVERS_METRICS_COLS];
 		bool		nulls[YB_SERVERS_METRICS_COLS];
 

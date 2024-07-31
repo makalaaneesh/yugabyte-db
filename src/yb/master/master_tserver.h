@@ -104,6 +104,7 @@ class MasterTabletServer : public tserver::TabletServerIf,
       tserver::PgYCQLStatementStatsResponsePB* resp) const override;
 
   virtual Result<std::vector<tablet::TabletStatusPB>> GetLocalTabletsMetadata() const override;
+  virtual Result<std::vector<tserver::ServerMetricsInfoPB>> GetServersMetrics() const override;
 
  private:
   Master* master_ = nullptr;

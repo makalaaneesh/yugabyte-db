@@ -969,7 +969,7 @@ message PgTabletsMetadataResponsePB {
 message PgServersMetricsRequestPB {
 }
 
-message ServerMetricsInfoPB{
+message ServerMetricsInfoPB {
   string uuid = 1;
   string metrics = 2;
 }

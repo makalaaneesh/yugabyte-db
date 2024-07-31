@@ -803,6 +803,8 @@ class PgApiImpl {
 
   Result<tserver::PgTabletsMetadataResponsePB> TabletsMetadata();
 
+  Result<tserver::PgServersMetricsResponsePB> ServersMetrics();
+
   bool IsCronLeader() const;
 
   [[nodiscard]] uint64_t GetCurrentReadTimePoint() const;

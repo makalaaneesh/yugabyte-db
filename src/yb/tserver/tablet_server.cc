@@ -1520,6 +1520,17 @@ Result<std::vector<tablet::TabletStatusPB>> TabletServer::GetLocalTabletsMetadat
   return result;
 }
 
+Result<std::vector<ServerMetricsInfoPB>> TabletServer::GetServersMetrics() const {
+  std::vector<ServerMetricsInfoPB> result;
+  for (int i=0; i<3; i++){
+    ServerMetricsInfoPB server_metrics;
+    server_metrics.set_uuid("abcd");
+    server_metrics.set_metrics("metrics");
+    result.emplace_back(std::move(server_metrics));
+  }
+  return result;
+}
+
 void TabletServer::SetCronLeaderLease(MonoTime cron_leader_lease_end) {
   SharedObject().SetCronLeaderLease(cron_leader_lease_end);
 }

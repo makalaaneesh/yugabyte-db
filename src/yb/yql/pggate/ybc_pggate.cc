@@ -2638,6 +2638,36 @@ YBCStatus YBCLocalTablets(YBCPgTabletsDescriptor** tablets, size_t* count) {
   return YBCStatusOK();
 }
 
+YBCStatus YBCServersMetrics(YBCPgServerMetricsInfo** serverMetricsInfo, size_t* count){
+  const auto result = pgapi->TabletsMetadata();
+  if (!result.ok()) {
+    return ToYBCStatus(result.status());
+  }
+  const auto& local_tablets = result.get().tablets();
+  *count = local_tablets.size();
+  if (!local_tablets.empty()) {
+    *tablets = static_cast<YBCPgTabletsDescriptor*>(
+        YBCPAlloc(sizeof(YBCPgTabletsDescriptor) * local_tablets.size()));
+    YBCPgTabletsDescriptor* dest = *tablets;
+    for (const auto& tablet : local_tablets) {
+      new (dest) YBCPgTabletsDescriptor {
+        .tablet_id = YBCPAllocStdString(tablet.tablet_id()),
+        .table_name = YBCPAllocStdString(tablet.table_name()),
+        .table_id = YBCPAllocStdString(tablet.table_id()),
+        .namespace_name = YBCPAllocStdString(tablet.namespace_name()),
+        .table_type = YBCPAllocStdString(HumanReadableTableType(tablet.table_type())),
+        .pgschema_name = YBCPAllocStdString(tablet.pgschema_name()),
+        .partition_key_start = YBCPAllocStdString(tablet.partition().partition_key_start()),
+        .partition_key_start_len = tablet.partition().partition_key_start().size(),
+        .partition_key_end = YBCPAllocStdString(tablet.partition().partition_key_end()),
+        .partition_key_end_len = tablet.partition().partition_key_end().size(),
+      };
+      ++dest;
+    }
+  }
+  return YBCStatusOK();
+}
+
 bool YBCIsCronLeader() { return pgapi->IsCronLeader(); }
 
 uint64_t YBCPgGetCurrentReadTimePoint() {

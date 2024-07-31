@@ -1701,6 +1701,14 @@ class PgClientServiceImpl::Impl {
     return Status::OK();
   }
 
+  Status ServersMetrics(
+      const PgServersMetricsRequestPB& req, PgServersMetricsResponsePB* resp,
+      rpc::RpcContext* context) {
+    const auto& result = VERIFY_RESULT(tablet_server_.GetServersMetrics());
+    *resp->mutable_servers_metrics() = {result.begin(), result.end()};
+    return Status::OK();
+  }
+
   #define PG_CLIENT_SESSION_METHOD_FORWARD(r, data, method) \
   Status method( \
       const BOOST_PP_CAT(BOOST_PP_CAT(Pg, method), RequestPB)& req, \

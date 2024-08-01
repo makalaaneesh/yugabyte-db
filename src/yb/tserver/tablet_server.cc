@@ -1535,10 +1535,10 @@ std::string TabletServer::GetMetrics() const {
   // if (!metrics_snapshotter_) {
   //   return "Metrics snapshotter is not enabled";
   // }
-  // std::map<std::string, double> cpu_usage = metrics_snapshotter_->GetCPUUsageInInterval(500);
-  std::map<std::string, double> cpu_usage;
-  cpu_usage["user"] = -1;
-  cpu_usage["system"] = -1;
+  std::map<std::string, double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
+  // std::map<std::string, double> cpu_usage;
+  // cpu_usage["user"] = -1;
+  // cpu_usage["system"] = -1;
   return "cpu_usage_user=" + std::to_string(cpu_usage["user"]) + ",cpu_usage_system=" + std::to_string(cpu_usage["system"]);
 }
 

@@ -1539,7 +1539,13 @@ std::string TabletServer::GetMetrics() const {
   // std::map<std::string, double> cpu_usage;
   // cpu_usage["user"] = -1;
   // cpu_usage["system"] = -1;
-  return "cpu_usage_user=" + std::to_string(cpu_usage["user"]) + ",cpu_usage_system=" + std::to_string(cpu_usage["system"]);
+  std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
+
+  return "cpu_usage_user=" + std::to_string(cpu_usage["user"]) \
+    + ",cpu_usage_system=" + std::to_string(cpu_usage["system"]) \
+    + ",mem_total=" + std::to_string(memory_usage[0]) \
+    + ",mem_free=" + std::to_string(memory_usage[1]) \
+    + ",mem_available=" + std::to_string(memory_usage[2]);
 }
 
 void TabletServer::SetCronLeaderLease(MonoTime cron_leader_lease_end) {

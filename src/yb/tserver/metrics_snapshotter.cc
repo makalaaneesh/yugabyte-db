@@ -594,6 +594,44 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
 //   return ret;
 // }
 
+Result<vector<uint64_t>> MetricsSnapshotter::GetMemoryUsage(){
+  uint64_t total_memory = 0, free_memory = 0, available_memory = 0;
+#ifdef __APPLE__
+  // Implementation for APPLE OS
+  // Retrieve physical memory information using sysctl
+  int mib[2];
+  mib[0] = CTL_HW;
+  mib[1] = HW_MEMSIZE;
+  int64_t physical_memory;
+  size_t length = sizeof(physical_memory);
+  if (sysctl(mib, 2, &physical_memory, &length, NULL, 0) != 0) {
+    return STATUS(RuntimeError, "Failed to retrieve physical memory information");
+  }
+  total_memory = physical_memory;
+  free_memory = 0; // Not available on macOS
+  available_memory = 0; // Not available on macOS
+#else
+  // Implementation for Linux
+  FILE* file = fopen("/proc/meminfo", "r");
+  if (!file) {
+    return STATUS(RuntimeError, "Failed to open /proc/meminfo");
+  }
+  char line[128];
+  while (fgets(line, sizeof(line), file)) {
+    if (strncmp(line, "MemTotal:", 9) == 0) {
+      sscanf(line + 9, "%lu", &total_memory);
+    } else if (strncmp(line, "MemFree:", 8) == 0) {
+      sscanf(line + 8, "%lu", &free_memory);
+    } else if (strncmp(line, "MemAvailable:", 13) == 0) {
+      sscanf(line + 13, "%lu", &available_memory);
+    }
+  }
+  fclose(file);
+#endif
+  vector<uint64_t> ret = {total_memory, free_memory, available_memory};
+  return ret;
+}
+
 Result<vector<uint64_t>> MetricsSnapshotter::GetCpuUsage() {
   uint64_t total_ticks = 0, total_user_ticks = 0, total_system_ticks = 0;
 #ifdef __APPLE__

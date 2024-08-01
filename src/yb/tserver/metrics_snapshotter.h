@@ -35,6 +35,7 @@ class MetricsSnapshotter {
 
   ~MetricsSnapshotter();
   static std::map<std::string, double> GetCPUUsageInInterval(int ms);
+  static Result<std::vector<uint64_t>> GetMemoryUsage();
  private:
   class Thread;
   std::unique_ptr<Thread> thread_;

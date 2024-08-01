@@ -10510,4 +10510,15 @@
   proargtypes => 'int8 int8 int8 bool bool bool int8',
   proargnames => '{query_id,diagnostics_interval_sec,explain_sample_rate,explain_analyze,explain_dist,explain_debug,bind_var_query_min_duration_ms}',
   prosrc => 'yb_query_diagnostics'},
+
+{ oid => '8069',
+  descr => 'Get metrics of all nodes',
+  proname => 'yb_servers_metrics', prorows => '10',
+  proretset => 't', provolatile => 'v', proparallel => 'r',
+  prorettype => 'record', proargtypes => '',
+  proallargtypes => '{text,text}',
+  proargnames => '{uuid,metrics}',
+  proargmodes => '{o,o}',
+  prosrc => 'yb_servers_metrics'},
 ]
+

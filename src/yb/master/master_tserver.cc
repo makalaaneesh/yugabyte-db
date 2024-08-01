@@ -220,5 +220,9 @@ Result<std::vector<tserver::ServerMetricsInfoPB>> MasterTabletServer::GetServers
   return STATUS_FORMAT(InternalError, "Unexpected call of GetLocalTabletsMetadata()");
 }
 
+std::string MasterTabletServer::GetMetrics() const {
+  return "Metrics not available for master tserver";
+}
+
 } // namespace master
 } // namespace yb

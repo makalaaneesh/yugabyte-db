@@ -3101,6 +3101,22 @@ void TabletServiceImpl::CheckTserverTabletHealth(const CheckTserverTabletHealthR
   context.RespondSuccess();
 }
 
+void TabletServiceImpl::GetMetrics(const GetMetricsRequestPB* req,
+                                   GetMetricsResponsePB* resp,
+                                   rpc::RpcContext context) {
+
+  char hostname[500];
+  if (gethostname(hostname, 500) != 0) {
+    strcpy(hostname, "unknown");
+  }
+  const int pid = getpid();
+  const string cpu_metrics = "hostname=" + std::string(hostname) + ":"+ std::to_string(pid);
+
+  // const string metrics = server_->GetMetrics();
+  resp->set_metrics(cpu_metrics);
+  context.RespondSuccess();
+}
+
 void TabletServiceImpl::GetLockStatus(const GetLockStatusRequestPB* req,
                                       GetLockStatusResponsePB* resp,
                                       rpc::RpcContext context) {

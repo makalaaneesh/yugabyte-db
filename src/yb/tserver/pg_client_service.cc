@@ -1704,9 +1704,40 @@ class PgClientServiceImpl::Impl {
   Status ServersMetrics(
       const PgServersMetricsRequestPB& req, PgServersMetricsResponsePB* resp,
       rpc::RpcContext* context) {
-    const auto& result = VERIFY_RESULT(tablet_server_.GetServersMetrics());
+
+    std::vector<tserver::ServerMetricsInfoPB> result;
+  // for (int i=0; i<3; i++){
+  //   tserver::ServerMetricsInfoPB server_metrics;
+  //   server_metrics.set_uuid("abcd");
+  //   server_metrics.set_metrics("metrics");
+  //   result.emplace_back(std::move(server_metrics));
+  // }
+  // return result;
+
+    auto remote_tservers = VERIFY_RESULT(tablet_server_.GetRemoteTabletServers());
+    // std::map<std::string, std::string> tserver_uuid_metrics;
+
+    rpc::RpcController controller;
+    for (const auto& remote_tserver : remote_tservers) {
+      GetMetricsRequestPB mreq;
+      GetMetricsResponsePB mresp;
+      tserver::ServerMetricsInfoPB server_metrics;
+      RETURN_NOT_OK(remote_tserver->InitProxy(&client()));
+      auto proxy = remote_tserver->proxy();
+      controller.Reset();
+      RETURN_NOT_OK(proxy->GetMetrics(mreq, &mresp, &controller));
+      server_metrics.set_uuid(remote_tserver->permanent_uuid());
+      server_metrics.set_metrics(mresp.metrics());
+      result.emplace_back(std::move(server_metrics));
+      // tserver_uuid_metrics[remote_tserver->permanent_uuid()] = mresp.metrics();
+      // const std::string test_value = *(resp->mutable_servers(0)->mutable_test()) + "|" + *(mresp.mutable_metrics());
+      // resp->mutable_servers(0)->set_test(test_value);
+    }
+    // const auto& result = VERIFY_RESULT(tablet_server_.GetServersMetrics());
     *resp->mutable_servers_metrics() = {result.begin(), result.end()};
     return Status::OK();
+
+
   }
 
   #define PG_CLIENT_SESSION_METHOD_FORWARD(r, data, method) \

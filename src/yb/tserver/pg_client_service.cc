@@ -1713,26 +1713,50 @@ class PgClientServiceImpl::Impl {
   //   result.emplace_back(std::move(server_metrics));
   // }
   // return result;
-
+    GetMetricsRequestPB mreq;
     auto remote_tservers = VERIFY_RESULT(tablet_server_.GetRemoteTabletServers());
     // std::map<std::string, std::string> tserver_uuid_metrics;
-
-    rpc::RpcController controller;
+    std::vector<std::future<Status>> status_futures;
+    status_futures.reserve(remote_tservers.size());
+    std::vector<std::shared_ptr<GetMetricsResponsePB>> node_responses;
+    node_responses.reserve(remote_tservers.size());
+    // rpc::RpcController controller;
     for (const auto& remote_tserver : remote_tservers) {
-      GetMetricsRequestPB mreq;
-      GetMetricsResponsePB mresp;
-      tserver::ServerMetricsInfoPB server_metrics;
+      
+      // GetMetricsResponsePB mresp;
+      // tserver::ServerMetricsInfoPB server_metrics;
       RETURN_NOT_OK(remote_tserver->InitProxy(&client()));
       auto proxy = remote_tserver->proxy();
-      controller.Reset();
-      RETURN_NOT_OK(proxy->GetMetrics(mreq, &mresp, &controller));
-      server_metrics.set_uuid(remote_tserver->permanent_uuid());
-      server_metrics.set_metrics(mresp.metrics());
-      result.emplace_back(std::move(server_metrics));
+      auto status_promise = std::make_shared<std::promise<Status>>();
+      status_futures.push_back(status_promise->get_future());
+      auto node_resp = std::make_shared<GetMetricsResponsePB>();
+      node_responses.push_back(node_resp);
+
+      std::shared_ptr<rpc::RpcController> controller = std::make_shared<rpc::RpcController>();
+      // controller.Reset();
+      proxy->GetMetricsAsync(mreq, node_resp.get(), controller.get(), [controller, status_promise] {
+        status_promise->set_value(controller->status());
+      });
+      // server_metrics.set_uuid(remote_tserver->permanent_uuid());
+      // server_metrics.set_metrics(mresp.metrics());
+      // result.emplace_back(std::move(server_metrics));
       // tserver_uuid_metrics[remote_tserver->permanent_uuid()] = mresp.metrics();
       // const std::string test_value = *(resp->mutable_servers(0)->mutable_test()) + "|" + *(mresp.mutable_metrics());
       // resp->mutable_servers(0)->set_test(test_value);
     }
+    for (size_t i = 0; i < status_futures.size(); i++) {
+      auto& node_resp = node_responses[i];
+      auto s = status_futures[i].get();
+      if (!s.ok()) {
+        resp->Clear();
+        return s;
+      }
+      tserver::ServerMetricsInfoPB server_metrics;
+      server_metrics.set_uuid(remote_tservers[i]->permanent_uuid());
+      server_metrics.set_metrics(node_resp->metrics());
+      result.emplace_back(std::move(server_metrics));
+    }
+
     // const auto& result = VERIFY_RESULT(tablet_server_.GetServersMetrics());
     *resp->mutable_servers_metrics() = {result.begin(), result.end()};
     return Status::OK();

@@ -1541,11 +1541,18 @@ std::string TabletServer::GetMetrics() const {
   // cpu_usage["system"] = -1;
   std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
 
+  int64_t tserver_memory_consumption = mem_tracker()->consumption();
+  int64_t tserver_memory_limit = mem_tracker()->limit();
+  int64_t tserver_memory_soft_limit = mem_tracker()->soft_limit();
+
   return "cpu_usage_user=" + std::to_string(cpu_usage["user"]) \
     + ",cpu_usage_system=" + std::to_string(cpu_usage["system"]) \
     + ",mem_total=" + std::to_string(memory_usage[0]) \
     + ",mem_free=" + std::to_string(memory_usage[1]) \
-    + ",mem_available=" + std::to_string(memory_usage[2]);
+    + ",mem_available=" + std::to_string(memory_usage[2]) \
+    + ",tserver_mem_consumption=" + std::to_string(tserver_memory_consumption) \
+    + ",tserver_mem_limit=" + std::to_string(tserver_memory_limit) \
+    + ",tserver_mem_soft_limit=" + std::to_string(tserver_memory_soft_limit);
 }
 
 void TabletServer::SetCronLeaderLease(MonoTime cron_leader_lease_end) {

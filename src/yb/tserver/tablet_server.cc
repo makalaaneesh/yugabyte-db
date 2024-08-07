@@ -1531,29 +1531,36 @@ Result<std::vector<tserver::ServerMetricsInfoPB>> TabletServer::GetServersMetric
   return result;
 }
 
-std::string TabletServer::GetMetrics() const {
+void TabletServer::GetMetrics(const GetMetricsRequestPB* req,
+                                   GetMetricsResponsePB* resp) const {
+
+  auto *cpu_usage_user = resp->mutable_metrics()->Add();
+  cpu_usage_user->set_name("cpu_usage_user");
+  cpu_usage_user->set_value("0.567");
+
+
   // if (!metrics_snapshotter_) {
   //   return "Metrics snapshotter is not enabled";
   // }
-  std::map<std::string, double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
+  // std::map<std::string, double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
   // std::map<std::string, double> cpu_usage;
   // cpu_usage["user"] = -1;
   // cpu_usage["system"] = -1;
-  std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
+  // std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
 
-  auto root_mem_tracker = MemTracker::GetRootTracker();
-  int64_t tserver_root_memory_consumption = root_mem_tracker->consumption();
-  int64_t tserver_root_memory_limit = root_mem_tracker->limit();
-  int64_t tserver_root_memory_soft_limit = root_mem_tracker->soft_limit();
+  // auto root_mem_tracker = MemTracker::GetRootTracker();
+  // int64_t tserver_root_memory_consumption = root_mem_tracker->consumption();
+  // int64_t tserver_root_memory_limit = root_mem_tracker->limit();
+  // int64_t tserver_root_memory_soft_limit = root_mem_tracker->soft_limit();
 
-  return "cpu_usage_user=" + std::to_string(cpu_usage["user"]) \
-    + ",cpu_usage_system=" + std::to_string(cpu_usage["system"]) \
-    + ",mem_total=" + std::to_string(memory_usage[0]) \
-    + ",mem_free=" + std::to_string(memory_usage[1]) \
-    + ",mem_available=" + std::to_string(memory_usage[2]) \
-    + ",tserver_root_memory_consumption=" + std::to_string(tserver_root_memory_consumption) \
-    + ",tserver_root_memory_limit=" + std::to_string(tserver_root_memory_limit) \
-    + ",tserver_root_memory_soft_limit=" + std::to_string(tserver_root_memory_soft_limit);
+  // return "cpu_usage_user=" + std::to_string(cpu_usage["user"]) \
+  //   + ",cpu_usage_system=" + std::to_string(cpu_usage["system"]) \
+  //   + ",mem_total=" + std::to_string(memory_usage[0]) \
+  //   + ",mem_free=" + std::to_string(memory_usage[1]) \
+  //   + ",mem_available=" + std::to_string(memory_usage[2]) \
+  //   + ",tserver_root_memory_consumption=" + std::to_string(tserver_root_memory_consumption) \
+  //   + ",tserver_root_memory_limit=" + std::to_string(tserver_root_memory_limit) \
+  //   + ",tserver_root_memory_soft_limit=" + std::to_string(tserver_root_memory_soft_limit);
 }
 
 void TabletServer::SetCronLeaderLease(MonoTime cron_leader_lease_end) {

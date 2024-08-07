@@ -114,7 +114,8 @@ class TabletServerIf : public LocalTabletServer {
 
   virtual Result<std::vector<tablet::TabletStatusPB>> GetLocalTabletsMetadata() const = 0;
   virtual Result<std::vector<tserver::ServerMetricsInfoPB>> GetServersMetrics() const = 0;
-  virtual std::string GetMetrics() const = 0;
+  virtual void GetMetrics(const tserver::GetMetricsRequestPB* req,
+                                   tserver::GetMetricsResponsePB* resp) const = 0;
 };
 
 } // namespace tserver

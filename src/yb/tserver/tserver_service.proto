@@ -186,7 +186,12 @@ message GetMetricsRequestPB {
 }
 
 message GetMetricsResponsePB {
-  required string metrics = 1;
+  repeated MetricsInfoPB metrics  = 1;
+}
+
+message MetricsInfoPB {
+  required string name = 1;
+  required string value = 2;
 }
 
 message GetLogLocationRequestPB {

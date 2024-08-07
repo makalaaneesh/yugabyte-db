@@ -1746,7 +1746,7 @@ class PgClientServiceImpl::Impl {
       // resp->mutable_servers(0)->set_test(test_value);
     }
     for (size_t i = 0; i < status_futures.size(); i++) {
-      // auto& node_resp = node_responses[i];
+      auto& node_resp = node_responses[i];
       auto s = status_futures[i].get();
       if (!s.ok()) {
         resp->Clear();
@@ -1757,10 +1757,14 @@ class PgClientServiceImpl::Impl {
       std::stringstream metricsJson;
       JsonWriter jw(&metricsJson, JsonWriter::COMPACT);
       jw.StartObject();
-      jw.String("key");
-      jw.String("value");
-      jw.String("key2");
-      jw.String("value2");
+      for (auto &metricsInfo : node_resp->metrics()) {
+        jw.String(metricsInfo.name());
+        jw.String(metricsInfo.value());
+      }
+      // jw.String("key");
+      // jw.String("value");
+      // jw.String("key2");
+      // jw.String("value2");
       jw.EndObject();
 
 

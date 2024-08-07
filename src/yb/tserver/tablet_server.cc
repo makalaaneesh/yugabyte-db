@@ -1534,24 +1534,46 @@ Result<std::vector<tserver::ServerMetricsInfoPB>> TabletServer::GetServersMetric
 void TabletServer::GetMetrics(const GetMetricsRequestPB* req,
                                    GetMetricsResponsePB* resp) const {
 
-  auto *cpu_usage_user = resp->mutable_metrics()->Add();
-  cpu_usage_user->set_name("cpu_usage_user");
-  cpu_usage_user->set_value("0.567");
+  
 
 
   // if (!metrics_snapshotter_) {
   //   return "Metrics snapshotter is not enabled";
   // }
-  // std::map<std::string, double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
+  std::map<std::string, double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
   // std::map<std::string, double> cpu_usage;
   // cpu_usage["user"] = -1;
   // cpu_usage["system"] = -1;
-  // std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
+  auto *cpu_usage_user = resp->mutable_metrics()->Add();
+  cpu_usage_user->set_name("cpu_usage_user");
+  cpu_usage_user->set_value(std::to_string(cpu_usage["user"]));
+  auto *cpu_usage_system = resp->mutable_metrics()->Add();
+  cpu_usage_system->set_name("cpu_usage_system");
+  cpu_usage_system->set_value(std::to_string(cpu_usage["system"]));
+  std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
+  auto *node_memory_total = resp->mutable_metrics()->Add();
+  node_memory_total->set_name("node_memory_total");
+  node_memory_total->set_value(std::to_string(memory_usage[0]));
+  auto *node_memory_free = resp->mutable_metrics()->Add();
+  node_memory_free->set_name("node_memory_free");
+  node_memory_free->set_value(std::to_string(memory_usage[1]));
+  auto *node_memory_available = resp->mutable_metrics()->Add();
+  node_memory_available->set_name("node_memory_available");
+  node_memory_available->set_value(std::to_string(memory_usage[2]));
 
-  // auto root_mem_tracker = MemTracker::GetRootTracker();
-  // int64_t tserver_root_memory_consumption = root_mem_tracker->consumption();
-  // int64_t tserver_root_memory_limit = root_mem_tracker->limit();
-  // int64_t tserver_root_memory_soft_limit = root_mem_tracker->soft_limit();
+  auto root_mem_tracker = MemTracker::GetRootTracker();
+  int64_t tserver_root_memory_consumption = root_mem_tracker->consumption();
+  int64_t tserver_root_memory_limit = root_mem_tracker->limit();
+  int64_t tserver_root_memory_soft_limit = root_mem_tracker->soft_limit();
+  auto *tserver_root_memory_consumption_metric = resp->mutable_metrics()->Add();
+  tserver_root_memory_consumption_metric->set_name("tserver_root_memory_consumption");
+  tserver_root_memory_consumption_metric->set_value(std::to_string(tserver_root_memory_consumption));
+  auto *tserver_root_memory_limit_metric = resp->mutable_metrics()->Add();
+  tserver_root_memory_limit_metric->set_name("tserver_root_memory_limit");
+  tserver_root_memory_limit_metric->set_value(std::to_string(tserver_root_memory_limit));
+  auto *tserver_root_memory_soft_limit_metric = resp->mutable_metrics()->Add();
+  tserver_root_memory_soft_limit_metric->set_name("tserver_root_memory_soft_limit");
+  tserver_root_memory_soft_limit_metric->set_value(std::to_string(tserver_root_memory_soft_limit));
 
   // return "cpu_usage_user=" + std::to_string(cpu_usage["user"]) \
   //   + ",cpu_usage_system=" + std::to_string(cpu_usage["system"]) \

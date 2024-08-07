@@ -80,6 +80,7 @@
 #include "yb/util/status_log.h"
 #include "yb/util/thread.h"
 #include "yb/util/yb_pg_errcodes.h"
+#include "yb/util/jsonwriter.h"
 
 using namespace std::literals;
 
@@ -1745,7 +1746,7 @@ class PgClientServiceImpl::Impl {
       // resp->mutable_servers(0)->set_test(test_value);
     }
     for (size_t i = 0; i < status_futures.size(); i++) {
-      auto& node_resp = node_responses[i];
+      // auto& node_resp = node_responses[i];
       auto s = status_futures[i].get();
       if (!s.ok()) {
         resp->Clear();
@@ -1753,7 +1754,17 @@ class PgClientServiceImpl::Impl {
       }
       tserver::ServerMetricsInfoPB server_metrics;
       server_metrics.set_uuid(remote_tservers[i]->permanent_uuid());
-      server_metrics.set_metrics(node_resp->metrics());
+      std::stringstream metricsJson;
+      JsonWriter jw(&metricsJson, JsonWriter::COMPACT);
+      jw.StartObject();
+      jw.String("key");
+      jw.String("value");
+      jw.String("key2");
+      jw.String("value2");
+      jw.EndObject();
+
+
+      server_metrics.set_metrics(metricsJson.str());
       result.emplace_back(std::move(server_metrics));
     }
 

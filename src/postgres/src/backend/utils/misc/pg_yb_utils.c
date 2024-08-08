@@ -3521,7 +3521,7 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 	MemoryContext per_query_ctx;
 	MemoryContext oldcontext;
 	int			i;
-#define YB_SERVERS_METRICS_COLS 2
+#define YB_SERVERS_METRICS_COLS 4
 
 	/* only superuser and yb_db_admin can query this function */
 	if (!superuser() && !IsYbDbAdminUser(GetUserId()))
@@ -3574,6 +3574,8 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 
 		values[0] = CStringGetTextDatum(metricsInfo->uuid);
 		values[1] = CStringGetTextDatum(metricsInfo->metrics);
+		values[2] = CStringGetTextDatum(metricsInfo->status);
+		values[3] = CStringGetTextDatum(metricsInfo->error);
 
 		tuplestore_putvalues(tupstore, tupdesc, values, nulls);
 	}

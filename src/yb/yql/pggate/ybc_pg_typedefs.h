@@ -775,6 +775,8 @@ typedef struct PgTabletsDescriptor {
 typedef struct PgServerMetricsInfo {
   const char* uuid;
   const char* metrics;
+  const char* status;
+  const char* error;
 } YBCPgServerMetricsInfo;
 
 typedef struct PgExplicitRowLockParams {

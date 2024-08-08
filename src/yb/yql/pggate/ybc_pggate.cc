@@ -2653,6 +2653,8 @@ YBCStatus YBCServersMetrics(YBCPgServerMetricsInfo** servers_metrics_info, size_
       new (dest) YBCPgServerMetricsInfo {
         .uuid = YBCPAllocStdString(server_metrics_info.uuid()),
         .metrics = YBCPAllocStdString(server_metrics_info.metrics()),
+        .status = YBCPAllocStdString(server_metrics_info.status()),
+        .error = YBCPAllocStdString(server_metrics_info.error()),
       };
       ++dest;
     }

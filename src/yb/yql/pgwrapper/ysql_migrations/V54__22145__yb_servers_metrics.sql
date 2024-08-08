@@ -8,8 +8,8 @@ BEGIN;
     proargnames, proargdefaults, protrftypes, prosrc, probin, proconfig, proacl
   ) VALUES (
     8069, 'yb_servers_metrics', 11, 10, 12, 1, 10, 0, '-', 'f', false,
-    false, true, true, 'v', 'r', 0, 0, 2249, '', '{25,25}',
-    '{o,o}', '{uuid,metrics}',
+    false, true, true, 'v', 'r', 0, 0, 2249, '', '{25,25,25,25}',
+    '{o,o,o,o}', '{uuid,metrics,status,error}',
     NULL, NULL, 'yb_servers_metrics', NULL, NULL, NULL)
   ON CONFLICT DO NOTHING;
 

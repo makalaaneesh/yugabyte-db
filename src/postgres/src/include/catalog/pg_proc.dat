@@ -10516,8 +10516,8 @@
   proname => 'yb_servers_metrics', prorows => '10',
   proretset => 't', provolatile => 'v', proparallel => 'r',
   prorettype => 'record', proargtypes => '',
-  proallargtypes => '{text,text}',
-  proargnames => '{uuid,metrics}',
-  proargmodes => '{o,o}',
+  proallargtypes => '{text,text,text,text}',
+  proargnames => '{uuid,metrics,status,error}',
+  proargmodes => '{o,o,o,o}',
   prosrc => 'yb_servers_metrics'},
 ]

@@ -1734,6 +1734,7 @@ class PgClientServiceImpl::Impl {
       node_responses.push_back(node_resp);
 
       std::shared_ptr<rpc::RpcController> controller = std::make_shared<rpc::RpcController>();
+      controller->set_timeout(MonoDelta::FromMilliseconds(5000));
       // controller.Reset();
       proxy->GetMetricsAsync(mreq, node_resp.get(), controller.get(), [controller, status_promise] {
         status_promise->set_value(controller->status());
@@ -1748,27 +1749,28 @@ class PgClientServiceImpl::Impl {
     for (size_t i = 0; i < status_futures.size(); i++) {
       auto& node_resp = node_responses[i];
       auto s = status_futures[i].get();
-      if (!s.ok()) {
-        resp->Clear();
-        return s;
-      }
       tserver::ServerMetricsInfoPB server_metrics;
       server_metrics.set_uuid(remote_tservers[i]->permanent_uuid());
-      std::stringstream metricsJson;
-      JsonWriter jw(&metricsJson, JsonWriter::COMPACT);
-      jw.StartObject();
-      for (auto &metricsInfo : node_resp->metrics()) {
-        jw.String(metricsInfo.name());
-        jw.String(metricsInfo.value());
+      if (!s.ok()) {
+        // resp->Clear();
+        // return s;
+        server_metrics.set_metrics("{}");
+        server_metrics.set_status("ERROR");
+        server_metrics.set_error(s.ToUserMessage());
+      } 
+      else {
+        std::stringstream metricsJson;
+        JsonWriter jw(&metricsJson, JsonWriter::COMPACT);
+        jw.StartObject();
+        for (auto &metricsInfo : node_resp->metrics()) {
+          jw.String(metricsInfo.name());
+          jw.String(metricsInfo.value());
+        }
+        jw.EndObject();
+        server_metrics.set_metrics(metricsJson.str());
+        server_metrics.set_status("OK");
+        server_metrics.set_error("");
       }
-      // jw.String("key");
-      // jw.String("value");
-      // jw.String("key2");
-      // jw.String("value2");
-      jw.EndObject();
-
-
-      server_metrics.set_metrics(metricsJson.str());
       result.emplace_back(std::move(server_metrics));
     }
 

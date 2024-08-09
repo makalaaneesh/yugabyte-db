@@ -100,6 +100,7 @@
 #include "utils/spccache.h"
 #include "utils/syscache.h"
 #include "utils/uuid.h"
+#include "utils/jsonb.h"
 #include "fmgr.h"
 #include "funcapi.h"
 #include "mb/pg_wchar.h"
@@ -3573,7 +3574,9 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 		memset(nulls, 0, sizeof(nulls));
 
 		values[0] = CStringGetTextDatum(metricsInfo->uuid);
-		values[1] = CStringGetTextDatum(metricsInfo->metrics);
+		// text *jsonb_text = cstring_to_text(metricsInfo->metrics);
+		values[1] = PointerGetDatum(DirectFunctionCall1(jsonb_in, CStringGetDatum(metricsInfo->metrics)));
+		// values[1] = jsonb_from_cstring(metricsInfo->metrics, strlen(metricsInfo->metrics));
 		values[2] = CStringGetTextDatum(metricsInfo->status);
 		values[3] = CStringGetTextDatum(metricsInfo->error);
 

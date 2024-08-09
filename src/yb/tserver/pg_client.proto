@@ -971,9 +971,14 @@ message PgServersMetricsRequestPB {
 
 message ServerMetricsInfoPB {
   string uuid = 1;
-  string metrics = 2;
+  repeated MetricsInfo2PB metrics = 2;
   string status = 3;
   string error = 4;
+}
+
+message MetricsInfo2PB {
+  string name = 1;
+  string value = 2;
 }
 
 message PgServersMetricsResponsePB {

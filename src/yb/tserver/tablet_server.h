@@ -373,7 +373,6 @@ class TabletServer : public DbServerBase, public TabletServerIf {
   void ClearAllMetaCachesOnServer() override;
 
   Result<std::vector<tablet::TabletStatusPB>> GetLocalTabletsMetadata() const override;
-  Result<std::vector<tserver::ServerMetricsInfoPB>> GetServersMetrics() const override;
   void GetMetrics(const tserver::GetMetricsRequestPB* req,
                                    tserver::GetMetricsResponsePB* resp) const override;
 

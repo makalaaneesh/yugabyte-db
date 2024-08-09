@@ -772,12 +772,20 @@ typedef struct PgTabletsDescriptor {
   size_t partition_key_end_len;
 } YBCPgTabletsDescriptor;
 
+typedef struct MetricsInfo {
+  const char* name;
+  const char* value;
+} YBCMetricsInfo;
+
 typedef struct PgServerMetricsInfo {
   const char* uuid;
-  const char* metrics;
+  YBCMetricsInfo* metrics;
+  const size_t metrics_count;
   const char* status;
   const char* error;
 } YBCPgServerMetricsInfo;
+
+
 
 typedef struct PgExplicitRowLockParams {
   int rowmark;

@@ -1754,27 +1754,34 @@ class PgClientServiceImpl::Impl {
       if (!s.ok()) {
         // resp->Clear();
         // return s;
-        server_metrics.set_metrics("{}");
+        // server_metrics.set_metrics("{}");
         server_metrics.set_status("ERROR");
         server_metrics.set_error(s.ToUserMessage());
       } 
       else {
-        std::stringstream metricsJson;
-        JsonWriter jw(&metricsJson, JsonWriter::COMPACT);
-        jw.StartObject();
-        for (auto &metricsInfo : node_resp->metrics()) {
-          jw.String(metricsInfo.name());
-          jw.String(metricsInfo.value());
+        for (auto &resp_metrics_info : node_resp->metrics()) {
+          tserver::MetricsInfo2PB *metrics_info = server_metrics.mutable_metrics()->Add();
+          metrics_info->set_name(resp_metrics_info.name());
+          metrics_info->set_value(resp_metrics_info.value());
+          // jw.String(metricsInfo.name());
+          // jw.String(metricsInfo.value());
         }
-        jw.EndObject();
-        server_metrics.set_metrics(metricsJson.str());
+        // std::stringstream metricsJson;
+        // JsonWriter jw(&metricsJson, JsonWriter::COMPACT);
+        // jw.StartObject();
+        // for (auto &metricsInfo : node_resp->metrics()) {
+        //   jw.String(metricsInfo.name());
+        //   jw.String(metricsInfo.value());
+        // }
+        // jw.EndObject();
+        // server_metrics.set_metrics(metricsJson.str());
         server_metrics.set_status("OK");
         server_metrics.set_error("");
       }
       result.emplace_back(std::move(server_metrics));
     }
 
-    // const auto& result = VERIFY_RESULT(tablet_server_.GetServersMetrics());
+   
     *resp->mutable_servers_metrics() = {result.begin(), result.end()};
     return Status::OK();
 

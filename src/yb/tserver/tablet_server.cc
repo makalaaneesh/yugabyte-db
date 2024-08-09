@@ -1520,17 +1520,6 @@ Result<std::vector<tablet::TabletStatusPB>> TabletServer::GetLocalTabletsMetadat
   return result;
 }
 
-Result<std::vector<tserver::ServerMetricsInfoPB>> TabletServer::GetServersMetrics() const {
-  std::vector<tserver::ServerMetricsInfoPB> result;
-  for (int i=0; i<3; i++){
-    tserver::ServerMetricsInfoPB server_metrics;
-    server_metrics.set_uuid("abcd");
-    server_metrics.set_metrics("metrics");
-    result.emplace_back(std::move(server_metrics));
-  }
-  return result;
-}
-
 void TabletServer::GetMetrics(const GetMetricsRequestPB* req,
                                    GetMetricsResponsePB* resp) const {
 

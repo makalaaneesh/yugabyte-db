@@ -194,6 +194,7 @@ message MetricsInfoPB {
   required string value = 2;
 }
 
+
 message GetLogLocationRequestPB {
 }
 

@@ -3579,21 +3579,21 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 		JsonbValue key;
 		JsonbValue value;
 		pushJsonbValue(&state, WJB_BEGIN_OBJECT, NULL);
-		for (int i = 0; i < metricsInfo->metrics_count; i++) {
+		for (int j = 0; j < metricsInfo->metrics_count; j++) {
 			key.type = jbvString;
-			key.val.string.val = (char *)metricsInfo->metrics[i].name;
-			key.val.string.len = strlen(metricsInfo->metrics[i].name);
+			key.val.string.val = (char *)metricsInfo->metrics[j].name;
+			key.val.string.len = strlen(metricsInfo->metrics[j].name);
 			pushJsonbValue(&state, WJB_KEY, &key);
 
 			value.type = jbvString;
-			value.val.string.val = (char *)metricsInfo->metrics[i].value;
-			value.val.string.len = strlen(metricsInfo->metrics[i].value);
+			value.val.string.val = (char *)metricsInfo->metrics[j].value;
+			value.val.string.len = strlen(metricsInfo->metrics[j].value);
 			pushJsonbValue(&state, WJB_VALUE, &value);
 		}
 		result = *pushJsonbValue(&state, WJB_END_OBJECT, NULL);
 		Jsonb *jsonb = JsonbValueToJsonb(&result);
 		values[1] = JsonbPGetDatum(jsonb);		
-		
+
 		values[2] = CStringGetTextDatum(metricsInfo->status);
 		values[3] = CStringGetTextDatum(metricsInfo->error);
 

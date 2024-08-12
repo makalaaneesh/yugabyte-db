@@ -44,7 +44,6 @@ class YCQLStatementStatsProvider;
 namespace tserver {
 class PgYCQLStatementStatsRequestPB;
 class PgYCQLStatementStatsResponsePB;
-class ServerMetricsInfoPB;
 
 using CertificateReloader = std::function<Status(void)>;
 using PgConfigReloader = std::function<Status(void)>;

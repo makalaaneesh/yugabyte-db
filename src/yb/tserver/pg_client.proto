@@ -969,19 +969,19 @@ message PgTabletsMetadataResponsePB {
 message PgServersMetricsRequestPB {
 }
 
-message ServerMetricsInfoPB {
+message PgServerMetricsInfoPB {
   string uuid = 1;
-  repeated MetricsInfo2PB metrics = 2;
+  repeated PgMetricsInfoPB metrics = 2;
   string status = 3;
   string error = 4;
 }
 
-message MetricsInfo2PB {
+message PgMetricsInfoPB {
   string name = 1;
   string value = 2;
 }
 
 message PgServersMetricsResponsePB {
   AppStatusPB status = 1;
-  repeated ServerMetricsInfoPB servers_metrics = 2;
+  repeated PgServerMetricsInfoPB servers_metrics = 2;
 }

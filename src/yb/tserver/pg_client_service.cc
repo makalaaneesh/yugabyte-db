@@ -1706,7 +1706,7 @@ class PgClientServiceImpl::Impl {
       const PgServersMetricsRequestPB& req, PgServersMetricsResponsePB* resp,
       rpc::RpcContext* context) {
 
-    std::vector<tserver::ServerMetricsInfoPB> result;
+    std::vector<tserver::PgServerMetricsInfoPB> result;
 
     GetMetricsRequestPB mreq;
     auto remote_tservers = VERIFY_RESULT(tablet_server_.GetRemoteTabletServers());
@@ -1733,7 +1733,7 @@ class PgClientServiceImpl::Impl {
     for (size_t i = 0; i < status_futures.size(); i++) {
       auto& node_resp = node_responses[i];
       auto s = status_futures[i].get();
-      tserver::ServerMetricsInfoPB server_metrics;
+      tserver::PgServerMetricsInfoPB server_metrics;
       server_metrics.set_uuid(remote_tservers[i]->permanent_uuid());
       if (!s.ok()) {
         server_metrics.set_status("ERROR");
@@ -1741,7 +1741,7 @@ class PgClientServiceImpl::Impl {
       } 
       else {
         for (auto &resp_metrics_info : node_resp->metrics()) {
-          tserver::MetricsInfo2PB *metrics_info = server_metrics.mutable_metrics()->Add();
+          tserver::PgMetricsInfoPB *metrics_info = server_metrics.mutable_metrics()->Add();
           metrics_info->set_name(resp_metrics_info.name());
           metrics_info->set_value(resp_metrics_info.value());
         }

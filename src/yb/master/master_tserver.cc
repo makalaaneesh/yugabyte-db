@@ -217,7 +217,7 @@ Result<std::vector<tablet::TabletStatusPB>> MasterTabletServer::GetLocalTabletsM
 
 void MasterTabletServer::GetMetrics(const tserver::GetMetricsRequestPB* req,
                                    tserver::GetMetricsResponsePB* resp) const {
-  // return "Metrics not available for master tserver";
+   LOG(DFATAL) << "Unexpected call of GetMetrics()";
 }
 
 } // namespace master

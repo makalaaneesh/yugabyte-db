@@ -3565,7 +3565,6 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 
 	for (i = 0; i < num_servers; ++i)
 	{
-		// YBCPgTabletsDescriptor *tablet = (YBCPgTabletsDescriptor *)tablets + i;
 		YBCPgServerMetricsInfo *metricsInfo = (YBCPgServerMetricsInfo *)servers_metrics_info + i;
 		Datum		values[YB_SERVERS_METRICS_COLS];
 		bool		nulls[YB_SERVERS_METRICS_COLS];
@@ -3574,17 +3573,13 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 		memset(nulls, 0, sizeof(nulls));
 
 		values[0] = CStringGetTextDatum(metricsInfo->uuid);
+		// creating jsonb column for metrics
 		JsonbParseState *state = NULL;
 		JsonbValue result;
-		// JsonbValue elem;
 		JsonbValue key;
 		JsonbValue value;
 		pushJsonbValue(&state, WJB_BEGIN_OBJECT, NULL);
-		// pushJsonbValue(&state, WJB_BEGIN_ARRAY, NULL);
-
 		for (int i = 0; i < metricsInfo->metrics_count; i++) {
-		// 	pushJsonbValue(&state, WJB_BEGIN_OBJECT, NULL);
-
 			key.type = jbvString;
 			key.val.string.val = (char *)metricsInfo->metrics[i].name;
 			key.val.string.len = strlen(metricsInfo->metrics[i].name);
@@ -3594,22 +3589,11 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 			value.val.string.val = (char *)metricsInfo->metrics[i].value;
 			value.val.string.len = strlen(metricsInfo->metrics[i].value);
 			pushJsonbValue(&state, WJB_VALUE, &value);
-
-		// 	pushJsonbValue(&state, WJB_END_OBJECT, NULL);
 		}
-
-		// pushJsonbValue(&state, WJB_END_ARRAY, NULL);
 		result = *pushJsonbValue(&state, WJB_END_OBJECT, NULL);
-
-		// result = *pushJsonbValue(&state, WJB_END_ARRAY, NULL);
-
 		Jsonb *jsonb = JsonbValueToJsonb(&result);
-
 		values[1] = JsonbPGetDatum(jsonb);		
-		// values[1] = PointerGetDatum(DirectFunctionCall1(jsonb_in, CStringGetDatum("{}")));
-
-		// values[1] = PointerGetDatum(DirectFunctionCall1(jsonb_in, CStringGetDatum(metricsInfo->metrics)));
-		// values[1] = jsonb_from_cstring(metricsInfo->metrics, strlen(metricsInfo->metrics));
+		
 		values[2] = CStringGetTextDatum(metricsInfo->status);
 		values[3] = CStringGetTextDatum(metricsInfo->error);
 

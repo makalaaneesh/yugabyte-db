@@ -1707,25 +1707,15 @@ class PgClientServiceImpl::Impl {
       rpc::RpcContext* context) {
 
     std::vector<tserver::ServerMetricsInfoPB> result;
-  // for (int i=0; i<3; i++){
-  //   tserver::ServerMetricsInfoPB server_metrics;
-  //   server_metrics.set_uuid("abcd");
-  //   server_metrics.set_metrics("metrics");
-  //   result.emplace_back(std::move(server_metrics));
-  // }
-  // return result;
+
     GetMetricsRequestPB mreq;
     auto remote_tservers = VERIFY_RESULT(tablet_server_.GetRemoteTabletServers());
-    // std::map<std::string, std::string> tserver_uuid_metrics;
     std::vector<std::future<Status>> status_futures;
     status_futures.reserve(remote_tservers.size());
     std::vector<std::shared_ptr<GetMetricsResponsePB>> node_responses;
     node_responses.reserve(remote_tservers.size());
-    // rpc::RpcController controller;
+
     for (const auto& remote_tserver : remote_tservers) {
-      
-      // GetMetricsResponsePB mresp;
-      // tserver::ServerMetricsInfoPB server_metrics;
       RETURN_NOT_OK(remote_tserver->InitProxy(&client()));
       auto proxy = remote_tserver->proxy();
       auto status_promise = std::make_shared<std::promise<Status>>();
@@ -1735,16 +1725,10 @@ class PgClientServiceImpl::Impl {
 
       std::shared_ptr<rpc::RpcController> controller = std::make_shared<rpc::RpcController>();
       controller->set_timeout(MonoDelta::FromMilliseconds(5000));
-      // controller.Reset();
+
       proxy->GetMetricsAsync(mreq, node_resp.get(), controller.get(), [controller, status_promise] {
         status_promise->set_value(controller->status());
       });
-      // server_metrics.set_uuid(remote_tserver->permanent_uuid());
-      // server_metrics.set_metrics(mresp.metrics());
-      // result.emplace_back(std::move(server_metrics));
-      // tserver_uuid_metrics[remote_tserver->permanent_uuid()] = mresp.metrics();
-      // const std::string test_value = *(resp->mutable_servers(0)->mutable_test()) + "|" + *(mresp.mutable_metrics());
-      // resp->mutable_servers(0)->set_test(test_value);
     }
     for (size_t i = 0; i < status_futures.size(); i++) {
       auto& node_resp = node_responses[i];
@@ -1752,9 +1736,6 @@ class PgClientServiceImpl::Impl {
       tserver::ServerMetricsInfoPB server_metrics;
       server_metrics.set_uuid(remote_tservers[i]->permanent_uuid());
       if (!s.ok()) {
-        // resp->Clear();
-        // return s;
-        // server_metrics.set_metrics("{}");
         server_metrics.set_status("ERROR");
         server_metrics.set_error(s.ToUserMessage());
       } 
@@ -1763,29 +1744,15 @@ class PgClientServiceImpl::Impl {
           tserver::MetricsInfo2PB *metrics_info = server_metrics.mutable_metrics()->Add();
           metrics_info->set_name(resp_metrics_info.name());
           metrics_info->set_value(resp_metrics_info.value());
-          // jw.String(metricsInfo.name());
-          // jw.String(metricsInfo.value());
         }
-        // std::stringstream metricsJson;
-        // JsonWriter jw(&metricsJson, JsonWriter::COMPACT);
-        // jw.StartObject();
-        // for (auto &metricsInfo : node_resp->metrics()) {
-        //   jw.String(metricsInfo.name());
-        //   jw.String(metricsInfo.value());
-        // }
-        // jw.EndObject();
-        // server_metrics.set_metrics(metricsJson.str());
         server_metrics.set_status("OK");
         server_metrics.set_error("");
       }
       result.emplace_back(std::move(server_metrics));
     }
-
    
     *resp->mutable_servers_metrics() = {result.begin(), result.end()};
     return Status::OK();
-
-
   }
 
   #define PG_CLIENT_SESSION_METHOD_FORWARD(r, data, method) \

@@ -2643,8 +2643,6 @@ YBCStatus YBCServersMetrics(YBCPgServerMetricsInfo** servers_metrics_info, size_
   if (!result.ok()) {
     return ToYBCStatus(result.status());
   }
-  // printf("YBCServersMetrics\n");
-  LOG(INFO) << "YBCServersMetrics ";
   const auto& servers_metrics = result.get().servers_metrics();
   *count = servers_metrics.size();
   if (!servers_metrics.empty()) {
@@ -2652,20 +2650,6 @@ YBCStatus YBCServersMetrics(YBCPgServerMetricsInfo** servers_metrics_info, size_
         YBCPAlloc(sizeof(YBCPgServerMetricsInfo) * servers_metrics.size()));
     YBCPgServerMetricsInfo* dest = *servers_metrics_info;
     for (const auto& server_metrics_info : servers_metrics) {
-      // size_t metrics_count = server_metrics_info.metrics().size();
-      // YBCMetricsInfo** metrics = NULL;
-      // *metrics = static_cast<YBCMetricsInfo*>(
-      //     YBCPAlloc(sizeof(YBCMetricsInfo) * metrics_count));
-      // YBCMetricsInfo* metricsIndex = *metrics;
-      
-      
-      // for (const auto &metricsInfo : server_metrics_info.metrics()) {
-      //   new (metricsIndex) YBCMetricsInfo {
-      //     .name = YBCPAllocStdString(metricsInfo.name()),
-      //     .value = YBCPAllocStdString(metricsInfo.value()),
-      //   };
-      //   ++metricsIndex;
-      // }
       size_t metrics_count = server_metrics_info.metrics().size();
       YBCMetricsInfo* metrics =
           static_cast<YBCMetricsInfo*>(
@@ -2681,8 +2665,6 @@ YBCStatus YBCServersMetrics(YBCPgServerMetricsInfo** servers_metrics_info, size_
         .uuid = YBCPAllocStdString(server_metrics_info.uuid()),
         .metrics = metrics,
         .metrics_count = metrics_count,
-        // .metrics = (const YBCMetricsInfo**) metrics,
-        // .metrics_count = metrics_count,
         .status = YBCPAllocStdString(server_metrics_info.status()),
         .error = YBCPAllocStdString(server_metrics_info.error()),
       };

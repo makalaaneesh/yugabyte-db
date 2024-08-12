@@ -161,9 +161,6 @@ class MetricsSnapshotter::Thread {
     return log_prefix_;
   }
 
-  // Retrieves current cpu usage information.
-  // Result<vector<uint64_t>> GetCpuUsage();
-
   // The server for which we are collecting metrics.
   TabletServer* const server_;
 
@@ -191,10 +188,6 @@ class MetricsSnapshotter::Thread {
   // Tokens from FLAGS_metrics_snapshotter_table_metrics_whitelist.
   std::unordered_set<std::string> table_metrics_whitelist_;
 
-  // Used to calculate CPU usage if enabled. Stores {total_ticks, user_ticks, system_ticks}.
-  vector<uint64_t> prev_ticks_ = {0, 0, 0};
-  bool first_run_cpu_ticks_ = true;
-
   TabletServerOptions opts_;
 
   DISALLOW_COPY_AND_ASSIGN(Thread);
@@ -218,11 +211,8 @@ Status MetricsSnapshotter::Stop() {
   return thread_->Stop();
 }
 
-std::map<std::string, double> MetricsSnapshotter::GetCPUUsageInInterval(int ms){
-  std::map<std::string, double> cpu_usage;
-  cpu_usage["user"] = -1;
-  cpu_usage["system"] = -1;
-  // return cpu_usage;
+std::vector<double> MetricsSnapshotter::GetCPUUsageInInterval(int ms){
+  std::vector<double> cpu_usage;
 
   auto cur_ticks1 = CHECK_RESULT(GetCpuUsage());
   vector<uint64_t> cur_ticks2;
@@ -243,11 +233,19 @@ std::map<std::string, double> MetricsSnapshotter::GetCPUUsageInInterval(int ms){
       } else {
         double cpu_usage_user = static_cast<double>(user_ticks) / total_ticks;
         double cpu_usage_system = static_cast<double>(system_ticks) / total_ticks;
-        cpu_usage["user"] = cpu_usage_user;
-        cpu_usage["system"] = cpu_usage_system;
+        cpu_usage.push_back(cpu_usage_user);
+        cpu_usage.push_back(cpu_usage_system);
       }
+    } else {
+      YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve cpu ticks. Got "
+                                                  "[total_ticks, user-ticks, system_ticks]=$0.",
+                                                  cur_ticks2);
     }
 
+  } else {
+    YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve cpu ticks. Got "
+                                                  "[total_ticks, user-ticks, system_ticks]=$0.",
+                                                  cur_ticks1);
   }
   return cpu_usage;
 
@@ -486,49 +484,26 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
   }
 
   if (tserver_metrics_whitelist_.contains(kMetricWhitelistItemCpuUsage)) {
-    // Store the {total_ticks, user_ticks, and system_ticks}
-    auto cur_ticks = CHECK_RESULT(MetricsSnapshotter::GetCpuUsage());
-    bool get_cpu_success = std::all_of(
-        cur_ticks.begin(), cur_ticks.end(), [](bool v) { return v > 0; });
-    if (get_cpu_success && first_run_cpu_ticks_) {
-      prev_ticks_ = cur_ticks;
-      first_run_cpu_ticks_ = false;
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-      cur_ticks = CHECK_RESULT(MetricsSnapshotter::GetCpuUsage());
-      get_cpu_success = std::all_of(
-          cur_ticks.begin(), cur_ticks.end(), [](bool v) { return v > 0; });
-    }
-
-    if (get_cpu_success) {
-      uint64_t total_ticks = cur_ticks[0] - prev_ticks_[0];
-      uint64_t user_ticks = cur_ticks[1] - prev_ticks_[1];
-      uint64_t system_ticks = cur_ticks[2] - prev_ticks_[2];
-      prev_ticks_ = cur_ticks;
-      if (total_ticks <= 0) {
-        YB_LOG_EVERY_N_SECS(ERROR, 120) << Format("Failed to calculate CPU usage - "
-                                                 "invalid total CPU ticks: $0.", total_ticks);
-      } else {
-        double cpu_usage_user = static_cast<double>(user_ticks) / total_ticks;
-        double cpu_usage_system = static_cast<double>(system_ticks) / total_ticks;
-
-        // The value column is type bigint, so store real value in details.
-        rapidjson::Document details;
-        details.SetObject();
-        details.AddMember("value", cpu_usage_user, details.GetAllocator());
-        RETURN_NOT_OK(DoPrometheusMetricsSnapshot(table, session, "table",
-                        server_->permanent_uuid(), "cpu_usage_user", 1000000 * cpu_usage_user,
-                        &details));
-
-        details.RemoveAllMembers();
-        details.AddMember("value", cpu_usage_system, details.GetAllocator());
-        RETURN_NOT_OK(DoPrometheusMetricsSnapshot(table, session, "table",
-                        server_->permanent_uuid(), "cpu_usage_system", 1000000 * cpu_usage_system,
-                        &details));
-      }
+    std::vector<double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
+    if (cpu_usage.size() != 2) {
+      YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve CPU usage. Got=$0.",
+                                                  cpu_usage);
     } else {
-      YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve cpu ticks. Got "
-                                                  "[total_ticks, user-ticks, system_ticks]=$0.",
-                                                  cur_ticks);
+      double cpu_usage_user = cpu_usage[0];
+      double cpu_usage_system = cpu_usage[1];
+      // The value column is type bigint, so store real value in details.
+      rapidjson::Document details;
+      details.SetObject();
+      details.AddMember("value", cpu_usage_user, details.GetAllocator());
+      RETURN_NOT_OK(DoPrometheusMetricsSnapshot(table, session, "table",
+                      server_->permanent_uuid(), "cpu_usage_user", 1000000 * cpu_usage_user,
+                      &details));
+
+      details.RemoveAllMembers();
+      details.AddMember("value", cpu_usage_system, details.GetAllocator());
+      RETURN_NOT_OK(DoPrometheusMetricsSnapshot(table, session, "table",
+                      server_->permanent_uuid(), "cpu_usage_system", 1000000 * cpu_usage_system,
+                      &details));
     }
   }
 
@@ -548,51 +523,6 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
   FlushSession(session);
   return Status::OK();
 }
-
-// Result<vector<uint64_t>> MetricsSnapshotter::Thread::GetCpuUsage() {
-//   uint64_t total_ticks = 0, total_user_ticks = 0, total_system_ticks = 0;
-// #ifdef __APPLE__
-//   host_cpu_load_info_data_t cpuinfo;
-//   mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
-//   if (host_statistics(
-//         mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t) &cpuinfo, &count) == KERN_SUCCESS) {
-//     for (int i = 0; i < CPU_STATE_MAX; i++) {
-//       total_ticks += cpuinfo.cpu_ticks[i];
-//     }
-//     total_user_ticks = cpuinfo.cpu_ticks[CPU_STATE_USER];
-//     total_system_ticks = cpuinfo.cpu_ticks[CPU_STATE_SYSTEM];
-//   } else {
-//     YB_LOG_EVERY_N_SECS(WARNING, 120) << "Couldn't get CPU ticks, failed opening host_statistics "
-//                                       << "with errno: " << strerror(errno);
-//   }
-// #else
-//   FILE* file = fopen("/proc/stat", "r");
-//   if (!file) {
-//     YB_LOG_EVERY_N_SECS(WARNING, 120) << "Could not get CPU ticks: failed to open /proc/stat "
-//                                       << "with errno: " << strerror(errno);
-//   }
-//   uint64_t user_ticks, user_nice_ticks, system_ticks, idle_ticks;
-//   int scanned = fscanf(file, "cpu %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64,
-//       &user_ticks, &user_nice_ticks, &system_ticks, &idle_ticks);
-//   if (scanned <= 0) {
-//     YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to scan /proc/stat for cpu ticks "
-//                                                "with error code=$0 and errno=$1.", scanned, errno);
-//   } else if (scanned != 4) {
-//     YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to scan /proc/stat for cpu ticks. ",
-//                                                "Expected 4 inputs but got $0.", scanned);
-//   } else {
-//     if (fclose(file)) {
-//       YB_LOG_EVERY_N_SECS(WARNING, 120) << "Failed to close /proc/stat with errno: "
-//                                         << strerror(errno);
-//     }
-//     total_ticks = user_ticks + user_nice_ticks + system_ticks + idle_ticks;
-//     total_user_ticks = user_ticks + user_nice_ticks;
-//     total_system_ticks = system_ticks;
-//   }
-// #endif
-//   vector<uint64_t> ret = {total_ticks, total_user_ticks, total_system_ticks};
-//   return ret;
-// }
 
 Result<vector<uint64_t>> MetricsSnapshotter::GetMemoryUsage(){
   uint64_t total_memory = 0, free_memory = 0, available_memory = 0;
@@ -664,13 +594,13 @@ Result<vector<uint64_t>> MetricsSnapshotter::GetCpuUsage() {
     YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to scan /proc/stat for cpu ticks. ",
                                                "Expected 4 inputs but got $0.", scanned);
   } else {
-    if (fclose(file)) {
-      YB_LOG_EVERY_N_SECS(WARNING, 120) << "Failed to close /proc/stat with errno: "
-                                        << strerror(errno);
-    }
     total_ticks = user_ticks + user_nice_ticks + system_ticks + idle_ticks;
     total_user_ticks = user_ticks + user_nice_ticks;
     total_system_ticks = system_ticks;
+  }
+  if (fclose(file)) {
+    YB_LOG_EVERY_N_SECS(WARNING, 120) << "Failed to close /proc/stat with errno: "
+                                      << strerror(errno);
   }
 #endif
   vector<uint64_t> ret = {total_ticks, total_user_ticks, total_system_ticks};

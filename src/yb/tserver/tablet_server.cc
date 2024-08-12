@@ -1522,13 +1522,18 @@ Result<std::vector<tablet::TabletStatusPB>> TabletServer::GetLocalTabletsMetadat
 
 void TabletServer::GetMetrics(const GetMetricsRequestPB* req,
                                    GetMetricsResponsePB* resp) const {
-  std::map<std::string, double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
-  auto *cpu_usage_user = resp->mutable_metrics()->Add();
-  cpu_usage_user->set_name("cpu_usage_user");
-  cpu_usage_user->set_value(std::to_string(cpu_usage["user"]));
-  auto *cpu_usage_system = resp->mutable_metrics()->Add();
-  cpu_usage_system->set_name("cpu_usage_system");
-  cpu_usage_system->set_value(std::to_string(cpu_usage["system"]));
+  std::vector<double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
+  if (cpu_usage.size() != 2) {
+    LOG(WARNING) << Format("Failed to retrieve CPU usage. Got=$0.", cpu_usage);
+  } else {
+    auto *cpu_usage_user = resp->mutable_metrics()->Add();
+    cpu_usage_user->set_name("cpu_usage_user");
+    cpu_usage_user->set_value(std::to_string(cpu_usage[0]));
+    auto *cpu_usage_system = resp->mutable_metrics()->Add();
+    cpu_usage_system->set_name("cpu_usage_system");
+    cpu_usage_system->set_value(std::to_string(cpu_usage[1]));
+  }
+  
 
   std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
   auto *node_memory_total = resp->mutable_metrics()->Add();

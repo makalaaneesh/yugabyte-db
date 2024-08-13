@@ -211,7 +211,7 @@ Status MetricsSnapshotter::Stop() {
   return thread_->Stop();
 }
 
-std::vector<double> MetricsSnapshotter::GetCPUUsageInInterval(int ms){
+std::vector<double> MetricsSnapshotter::GetCPUUsageInInterval(int ms) {
   std::vector<double> cpu_usage;
 
   auto cur_ticks1 = CHECK_RESULT(GetCpuUsage());
@@ -223,7 +223,7 @@ std::vector<double> MetricsSnapshotter::GetCPUUsageInInterval(int ms){
     cur_ticks2 = CHECK_RESULT(GetCpuUsage());
     get_cpu_success = std::all_of(
         cur_ticks2.begin(), cur_ticks2.end(), [](bool v) { return v > 0; });
-    if (get_cpu_success){
+    if (get_cpu_success) {
       uint64_t total_ticks = cur_ticks2[0] - cur_ticks1[0];
       uint64_t user_ticks = cur_ticks2[1] - cur_ticks1[1];
       uint64_t system_ticks = cur_ticks2[2] - cur_ticks1[2];
@@ -524,7 +524,7 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
   return Status::OK();
 }
 
-Result<vector<uint64_t>> MetricsSnapshotter::GetMemoryUsage(){
+Result<vector<uint64_t>> MetricsSnapshotter::GetMemoryUsage() {
   uint64_t total_memory = 0, free_memory = 0, available_memory = 0;
 #ifdef __APPLE__
   // Implementation for APPLE OS

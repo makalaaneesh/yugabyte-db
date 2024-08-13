@@ -39,8 +39,8 @@ class MetricsSnapshotter {
  private:
   class Thread;
   std::unique_ptr<Thread> thread_;
-  DISALLOW_COPY_AND_ASSIGN(MetricsSnapshotter);
   static Result<std::vector<uint64_t>> GetCpuUsage();
+  DISALLOW_COPY_AND_ASSIGN(MetricsSnapshotter);
 };
 
 } // namespace tserver

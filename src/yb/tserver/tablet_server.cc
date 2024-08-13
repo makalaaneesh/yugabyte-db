@@ -1562,7 +1562,8 @@ void TabletServer::GetMetrics(const GetMetricsRequestPB* req,
   int64_t tserver_root_memory_soft_limit = root_mem_tracker->soft_limit();
   auto *tserver_root_memory_consumption_metric = resp->mutable_metrics()->Add();
   tserver_root_memory_consumption_metric->set_name("tserver_root_memory_consumption");
-  tserver_root_memory_consumption_metric->set_value(std::to_string(tserver_root_memory_consumption));
+  tserver_root_memory_consumption_metric->set_value(
+    std::to_string(tserver_root_memory_consumption));
   auto *tserver_root_memory_limit_metric = resp->mutable_metrics()->Add();
   tserver_root_memory_limit_metric->set_name("tserver_root_memory_limit");
   tserver_root_memory_limit_metric->set_value(std::to_string(tserver_root_memory_limit));

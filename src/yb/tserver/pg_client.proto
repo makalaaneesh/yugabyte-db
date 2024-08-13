@@ -100,6 +100,8 @@ service PgClientService {
 
   rpc TabletsMetadata(PgTabletsMetadataRequestPB) returns (PgTabletsMetadataResponsePB);
 
+  rpc ServersMetrics(PgServersMetricsRequestPB) returns (PgServersMetricsResponsePB);
+
   // DEPRECATED: GetReplicationSlot RPC is a superset of this GetReplicationSlotStatus.
   // So GetReplicationSlot should be used everywhere.
   rpc GetReplicationSlotStatus(PgGetReplicationSlotStatusRequestPB)
@@ -963,4 +965,24 @@ message PgTabletsMetadataRequestPB {
 message PgTabletsMetadataResponsePB {
   AppStatusPB status = 1;
   repeated tablet.TabletStatusPB tablets = 2;
+}
+
+message PgServersMetricsRequestPB {
+}
+
+message PgServerMetricsInfoPB {
+  string uuid = 1;
+  repeated PgMetricsInfoPB metrics = 2;
+  string status = 3;
+  string error = 4;
+}
+
+message PgMetricsInfoPB {
+  string name = 1;
+  string value = 2;
+}
+
+message PgServersMetricsResponsePB {
+  AppStatusPB status = 1;
+  repeated PgServerMetricsInfoPB servers_metrics = 2;
 }

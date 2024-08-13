@@ -85,6 +85,7 @@ class TserverXClusterContextIf;
     (RollbackToSubTransaction) \
     (SetActiveSubTransaction) \
     (TabletsMetadata) \
+    (ServersMetrics) \
     (TabletServerCount) \
     (TruncateTable) \
     (UpdateSequenceTuple) \

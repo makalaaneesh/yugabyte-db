@@ -14,6 +14,8 @@
 #pragma once
 
 #include <memory>
+#include<vector>
+#include<map>
 
 #include "yb/gutil/macros.h"
 
@@ -32,11 +34,13 @@ class MetricsSnapshotter {
   Status Stop();
 
   ~MetricsSnapshotter();
-
+  static std::vector<double> GetCPUUsageInInterval(int ms);
+  static Result<std::vector<uint64_t>> GetMemoryUsage();
  private:
   class Thread;
   std::unique_ptr<Thread> thread_;
   DISALLOW_COPY_AND_ASSIGN(MetricsSnapshotter);
+  static Result<std::vector<uint64_t>> GetCpuUsage();
 };
 
 } // namespace tserver

@@ -375,6 +375,8 @@ class TabletServer : public DbServerBase, public TabletServerIf {
   Status ClearMetacache(const std::string& namespace_id) override;
 
   Result<std::vector<tablet::TabletStatusPB>> GetLocalTabletsMetadata() const override;
+  void GetMetrics(const tserver::GetMetricsRequestPB* req,
+                                   tserver::GetMetricsResponsePB* resp) const override;
 
   void TEST_SetIsCronLeader(bool is_cron_leader);
 

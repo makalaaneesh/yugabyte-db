@@ -14,6 +14,9 @@
 package org.yb.pgsql;
 
 import com.google.common.net.HostAndPort;
+import org.json.JSONObject;
+import java.util.ArrayList;
+import java.util.Arrays;
 import com.yugabyte.ysql.ClusterAwareLoadBalancer;
 import com.yugabyte.jdbc.PgConnection;
 import org.yb.AssertionWrappers;
@@ -34,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(value = YBTestRunner.class)
 public class TestYbServersMetrics extends BasePgSQLTest {
@@ -81,96 +85,147 @@ public class TestYbServersMetrics extends BasePgSQLTest {
   //      parseYsqlConnMgrPort(cmds) : parseYsqlPort(cmds);
   // }
 
+  private void assertYbServersMetricsOutput(int expectedRows, int expectedStatusOkRows) throws Exception{
+    Connection conn = getConnectionBuilder().connect();
+    try {
+      Statement st = conn.createStatement();
+      ResultSet rs = st.executeQuery("select * from yb_servers_metrics()");
+      int row_count = 0;
+      int ok_count = 0;
+      while (rs.next()) {
+        String uuid = rs.getString(1);
+        String metrics = rs.getString(2);
+        String status = rs.getString(3);
+        String error = rs.getString(4);
+        if (status.equals("OK")) {
+          ++ok_count;
+          JSONObject metricsJson = new JSONObject(metrics);
+          ArrayList<String> metricKeys = new ArrayList<String>(metricsJson.keySet());
+          ArrayList<String> expectedKeys = new ArrayList<String>(Arrays.asList("node_memory_free", "node_memory_available", "tserver_root_memory_limit", "tserver_root_memory_soft_limit", "tserver_root_memory_consumption", "node_memory_total"));
+          AssertionWrappers.assertTrue("Expected keys are not present. Present keys are:" + metricKeys , metricKeys.containsAll(expectedKeys));
+        } else {
+          AssertionWrappers.assertEquals("{}", metrics);
+        }
+        ++row_count;
+      }
+      AssertionWrappers.assertTrue("Expected " + expectedRows + " tservers, found " + row_count, row_count == expectedRows);
+      AssertionWrappers.assertTrue("Expected status OK for " + expectedStatusOkRows + " tservers, found " + ok_count, ok_count == expectedStatusOkRows);
+    } catch (SQLException e) {
+      throw new RuntimeException("Failed to execute yb_servers_metrics query", e);
+    } finally {
+      conn.close();
+    }
+  }
+
   @Test
   public void testYBServersMetricsFunction() throws Exception {
-    Connection conn = getConnectionBuilder().connect();
-    Statement st = conn.createStatement();
-    ResultSet rs = st.executeQuery("select * from yb_servers_metrics()");
+    assertYbServersMetricsOutput(3,3);
+    // Connection conn = getConnectionBuilder().connect();
+    // Statement st = conn.createStatement();
+    // ResultSet rs = st.executeQuery("select * from yb_servers_metrics()");
     
 
-    int row_count = 0;
-    int ok_count = 0;
-    while (rs.next()) {
-      String uuid = rs.getString(1);
-      String metrics = rs.getString(2);
-      String status = rs.getString(3);
-      String error = rs.getString(4);
-      if (status.equals("OK")) {
-        ++ok_count;
-      }
-      ++row_count;
-    }
+    // int row_count = 0;
+    // int ok_count = 0;
+    // while (rs.next()) {
+    //   String uuid = rs.getString(1);
+    //   String metrics = rs.getString(2);
+    //   String status = rs.getString(3);
+    //   String error = rs.getString(4);
+    //   if (status.equals("OK")) {
+    //     ++ok_count;
+    //   }
+    //   ++row_count;
+    // }
 
-    conn.close();
-    AssertionWrappers.assertTrue("Expected 3 tservers, found " + row_count, row_count == 3);
-    AssertionWrappers.assertTrue("Expected status OK for 3 tservers, found " + ok_count, ok_count == 3);
+    // conn.close();
+    // AssertionWrappers.assertTrue("Expected 3 tservers, found " + row_count, row_count == 3);
+    // AssertionWrappers.assertTrue("Expected status OK for 3 tservers, found " + ok_count, ok_count == 3);
 
     miniCluster.startTServer(getTServerFlags());
     AssertionWrappers.assertTrue(miniCluster.waitForTabletServers(4));
     waitForTServerHeartbeat();
-    // Thread.sleep(2 * miniCluster.getClusterParameters().getTServerHeartbeatTimeoutMs());
 
-    conn = getConnectionBuilder().connect();
-    st = conn.createStatement();
-    rs = st.executeQuery("select * from yb_servers_metrics()");
+    assertYbServersMetricsOutput(4,4);
 
-    row_count = 0;
-    ok_count = 0;
-    while (rs.next()) {
-      String uuid = rs.getString(1);
-      String metrics = rs.getString(2);
-      String status = rs.getString(3);
-      String error = rs.getString(4);
-      if (status.equals("OK")) {
-        ++ok_count;
-      }
-      ++row_count;
-    }
-    conn.close();
-    AssertionWrappers.assertTrue("Expected 4 tservers, found " + row_count, row_count == 4);
-    AssertionWrappers.assertTrue("Expected status OK for 4 tservers, found " + ok_count, ok_count == 4);
+    // conn = getConnectionBuilder().connect();
+    // st = conn.createStatement();
+    // rs = st.executeQuery("select * from yb_servers_metrics()");
+
+    // row_count = 0;
+    // ok_count = 0;
+    // while (rs.next()) {
+    //   String uuid = rs.getString(1);
+    //   String metrics = rs.getString(2);
+    //   String status = rs.getString(3);
+    //   String error = rs.getString(4);
+    //   if (status.equals("OK")) {
+    //     ++ok_count;
+    //   }
+    //   ++row_count;
+    // }
+    // conn.close();
+    // AssertionWrappers.assertTrue("Expected 4 tservers, found " + row_count, row_count == 4);
+    // AssertionWrappers.assertTrue("Expected status OK for 4 tservers, found " + ok_count, ok_count == 4);
 
 
     miniCluster.killTabletServerOnHostPort(miniCluster.getTabletServers().keySet().iterator().next());
+    assertYbServersMetricsOutput(4,3);
 
-    conn = getConnectionBuilder().connect();
-    st = conn.createStatement();
-    rs = st.executeQuery("select * from yb_servers_metrics()");
+    // conn = getConnectionBuilder().connect();
+    // st = conn.createStatement();
+    // final long begin = System.currentTimeMillis();
+    // rs = st.executeQuery("select * from yb_servers_metrics()");
+    // long end = System.currentTimeMillis();
+    // AssertionWrappers.assertLessThan(end - begin, Long.valueOf(2000));
+    // AtomicReference<SQLException> sqlExceptionWrapper = new AtomicReference<>();
 
-    row_count = 0;
-    ok_count = 0;
-    while (rs.next()) {
-      String uuid = rs.getString(1);
-      String metrics = rs.getString(2);
-      String status = rs.getString(3);
-      String error = rs.getString(4);
-      if (status.equals("OK")) {
-        ++ok_count;
-      }
-      ++row_count;
-    }
-    AssertionWrappers.assertTrue("Expected 4 tservers, found " + row_count, row_count == 4);
-    AssertionWrappers.assertTrue("Expected status OK for 3 tservers, found " + ok_count, ok_count == 3);
+    // runWithTimeout(6000, "yb_servers_metrics()", () -> {
+    //   try {
+    //     rs = st.executeQuery("select * from yb_servers_metrics()");
+    //   } catch (SQLException e) {
+    //     sqlExceptionWrapper.set(e);
+    //   }
+    // });
+    
+
+    // row_count = 0;
+    // ok_count = 0;
+    // while (rs.next()) {
+    //   String uuid = rs.getString(1);
+    //   String metrics = rs.getString(2);
+    //   String status = rs.getString(3);
+    //   String error = rs.getString(4);
+    //   if (status.equals("OK")) {
+    //     ++ok_count;
+    //   } else {
+    //     AssertionWrappers.assertEquals("sample error", error);
+    //   }
+    //   ++row_count;
+    // }
+    // AssertionWrappers.assertTrue("Expected 4 tservers, found " + row_count, row_count == 4);
+    // AssertionWrappers.assertTrue("Expected status OK for 3 tservers, found " + ok_count, ok_count == 3);
 
     Thread.sleep(2 * miniCluster.getClusterParameters().getTServerHeartbeatTimeoutMs());
+    assertYbServersMetricsOutput(3,3);
 
-    conn = getConnectionBuilder().connect();
-    st = conn.createStatement();
-    rs = st.executeQuery("select * from yb_servers_metrics()");
-    row_count = 0;
-    ok_count = 0;
-    while (rs.next()) {
-      String uuid = rs.getString(1);
-      String metrics = rs.getString(2);
-      String status = rs.getString(3);
-      String error = rs.getString(4);
-      if (status.equals("OK")) {
-        ++ok_count;
-      }
-      ++row_count;
-    }
-    AssertionWrappers.assertTrue("Expected 3 tservers, found " + row_count, row_count == 3);
-    AssertionWrappers.assertTrue("Expected status OK for 3 tservers, found " + ok_count, ok_count == 3);
+    // conn = getConnectionBuilder().connect();
+    // st = conn.createStatement();
+    // rs = st.executeQuery("select * from yb_servers_metrics()");
+    // row_count = 0;
+    // ok_count = 0;
+    // while (rs.next()) {
+    //   String uuid = rs.getString(1);
+    //   String metrics = rs.getString(2);
+    //   String status = rs.getString(3);
+    //   String error = rs.getString(4);
+    //   if (status.equals("OK")) {
+    //     ++ok_count;
+    //   }
+    //   ++row_count;
+    // }
+    // AssertionWrappers.assertTrue("Expected 3 tservers, found " + row_count, row_count == 3);
+    // AssertionWrappers.assertTrue("Expected status OK for 3 tservers, found " + ok_count, ok_count == 3);
 
 
     // int cnt = 0;

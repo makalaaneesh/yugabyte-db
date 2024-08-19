@@ -192,7 +192,7 @@ class TabletServiceImpl : public TabletServerServiceIf, public ReadTabletProvide
                      GetLockStatusResponsePB* resp,
                      rpc::RpcContext context) override;
 
-void GetMetrics(const GetMetricsRequestPB* req,
+  void GetMetrics(const GetMetricsRequestPB* req,
                   GetMetricsResponsePB* resp,
                   rpc::RpcContext context) override;
 

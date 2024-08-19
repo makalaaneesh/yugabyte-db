@@ -108,7 +108,6 @@ service TabletServerService {
   // a persisted intent. These intents may correspond to explicit or implicit locks.
   rpc GetLockStatus(GetLockStatusRequestPB) returns (GetLockStatusResponsePB);
 
-  rpc GetMetrics(GetMetricsRequestPB) returns (GetMetricsResponsePB);
   rpc CancelTransaction(CancelTransactionRequestPB) returns (CancelTransactionResponsePB);
 
   // Returns the schema version on the XCluster consumer side that is
@@ -137,7 +136,8 @@ service TabletServerService {
       returns (AcquireObjectLockResponsePB);
   rpc ReleaseObjectLocks(ReleaseObjectLockRequestPB)
       returns (ReleaseObjectLockResponsePB);
-}
+
+  rpc GetMetrics(GetMetricsRequestPB) returns (GetMetricsResponsePB);
 
 // Note: Either among transactions_by_tablet or transaction_ids should be set. Both the fields
 // shouldn't be set together nor should be left empty together.

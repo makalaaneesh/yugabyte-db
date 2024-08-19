@@ -69,6 +69,7 @@
 #include "yb/util/debug.h"
 #include "yb/util/flags.h"
 #include "yb/util/flags/flag_tags.h"
+#include "yb/util/jsonwriter.h"
 #include "yb/util/logging.h"
 #include "yb/util/net/net_util.h"
 #include "yb/util/random_util.h"
@@ -80,7 +81,7 @@
 #include "yb/util/status_log.h"
 #include "yb/util/thread.h"
 #include "yb/util/yb_pg_errcodes.h"
-#include "yb/util/jsonwriter.h"
+
 
 using namespace std::literals;
 
@@ -1706,12 +1707,12 @@ class PgClientServiceImpl::Impl {
       rpc::RpcContext* context) {
 
     std::vector<tserver::PgServerMetricsInfoPB> result;
-
-    GetMetricsRequestPB mreq;
-    auto remote_tservers = VERIFY_RESULT(tablet_server_.GetRemoteTabletServers());
     std::vector<std::future<Status>> status_futures;
-    status_futures.reserve(remote_tservers.size());
     std::vector<std::shared_ptr<GetMetricsResponsePB>> node_responses;
+
+    GetMetricsRequestPB metrics_req;
+    const auto remote_tservers = VERIFY_RESULT(tablet_server_.GetRemoteTabletServers());
+    status_futures.reserve(remote_tservers.size());
     node_responses.reserve(remote_tservers.size());
 
     for (const auto& remote_tserver : remote_tservers) {
@@ -1725,11 +1726,11 @@ class PgClientServiceImpl::Impl {
       std::shared_ptr<rpc::RpcController> controller = std::make_shared<rpc::RpcController>();
       controller->set_timeout(MonoDelta::FromMilliseconds(5000));
 
-      proxy->GetMetricsAsync(mreq, node_resp.get(), controller.get(), [controller, status_promise] {
+      proxy->GetMetricsAsync(metrics_req, node_resp.get(), controller.get(), [controller, status_promise] {
         status_promise->set_value(controller->status());
       });
     }
-    for (size_t i = 0; i < status_futures.size(); i++) {
+    for (size_t i = 0; i < status_futures.size(); ++i) {
       auto& node_resp = node_responses[i];
       auto s = status_futures[i].get();
       tserver::PgServerMetricsInfoPB server_metrics;

@@ -1532,7 +1532,7 @@ Result<std::vector<tablet::TabletStatusPB>> TabletServer::GetLocalTabletsMetadat
 
 void TabletServer::GetMetrics(const GetMetricsRequestPB* req,
                                    GetMetricsResponsePB* resp) const {
-  std::vector<double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
+  std::vector<double> cpu_usage = MetricsSnapshotter::GetCpuUsageInInterval(500);
   auto *cpu_usage_user = resp->mutable_metrics()->Add();
   cpu_usage_user->set_name("cpu_usage_user");
   auto *cpu_usage_system = resp->mutable_metrics()->Add();

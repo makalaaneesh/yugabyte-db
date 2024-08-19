@@ -114,6 +114,8 @@ public class TestYbServersMetrics extends BasePgSQLTest {
     assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS + 1, -1);
 
     // kill a tserver
+    // closing root connection to avoid potential errors during clean up.
+    connection.close();
     List<HostAndPort> tserverList = new ArrayList<>(miniCluster.getTabletServers().keySet());
     HostAndPort tserver = tserverList.get(tserverList.size() - 1);
     miniCluster.killTabletServerOnHostPort(tserver);

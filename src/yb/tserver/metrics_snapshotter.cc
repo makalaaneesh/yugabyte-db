@@ -19,7 +19,6 @@
 #include <vector>
 #include <mutex>
 #include <set>
-#include<map>
 
 #include <chrono>
 #include <thread>
@@ -211,16 +210,15 @@ Status MetricsSnapshotter::Stop() {
   return thread_->Stop();
 }
 
-std::vector<double> MetricsSnapshotter::GetCPUUsageInInterval(int ms) {
+std::vector<double> MetricsSnapshotter::GetCpuUsageInInterval(int ms) {
   std::vector<double> cpu_usage;
 
   auto cur_ticks1 = CHECK_RESULT(GetCpuUsage());
-  vector<uint64_t> cur_ticks2;
   bool get_cpu_success = std::all_of(
       cur_ticks1.begin(), cur_ticks1.end(), [](bool v) { return v > 0; });
   if (get_cpu_success) {
     std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-    cur_ticks2 = CHECK_RESULT(GetCpuUsage());
+    auto cur_ticks2 = CHECK_RESULT(GetCpuUsage());
     get_cpu_success = std::all_of(
         cur_ticks2.begin(), cur_ticks2.end(), [](bool v) { return v > 0; });
     if (get_cpu_success) {
@@ -231,10 +229,8 @@ std::vector<double> MetricsSnapshotter::GetCPUUsageInInterval(int ms) {
         YB_LOG_EVERY_N_SECS(ERROR, 120) << Format("Failed to calculate CPU usage - "
                                                   "invalid total CPU ticks: $0.", total_ticks);
       } else {
-        double cpu_usage_user = static_cast<double>(user_ticks) / total_ticks;
-        double cpu_usage_system = static_cast<double>(system_ticks) / total_ticks;
-        cpu_usage.push_back(cpu_usage_user);
-        cpu_usage.push_back(cpu_usage_system);
+        cpu_usage.emplace_back(static_cast<double>(user_ticks) / total_ticks);
+        cpu_usage.emplace_back(static_cast<double>(system_ticks) / total_ticks);
       }
     } else {
       YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve cpu ticks. Got "
@@ -484,7 +480,7 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
   }
 
   if (tserver_metrics_whitelist_.contains(kMetricWhitelistItemCpuUsage)) {
-    std::vector<double> cpu_usage = MetricsSnapshotter::GetCPUUsageInInterval(500);
+    std::vector<double> cpu_usage = MetricsSnapshotter::GetCpuUsageInInterval(500);
     if (cpu_usage.size() != 2) {
       YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve CPU usage. Got=$0.",
                                                   cpu_usage);

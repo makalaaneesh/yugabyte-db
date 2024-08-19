@@ -42,6 +42,12 @@ import java.util.concurrent.atomic.AtomicReference;
 @RunWith(value = YBTestRunner.class)
 public class TestYbServersMetrics extends BasePgSQLTest {
   private static final Logger LOG = LoggerFactory.getLogger(TestYbServersMetrics.class);
+  private static final int NUM_TSERVERS = 3;
+  private static final int RF = 3;
+  private static ArrayList<String> expectedKeys = new ArrayList<String>(Arrays.asList(
+    "node_memory_free", "node_memory_available", "node_memory_total",
+    "tserver_root_memory_limit", "tserver_root_memory_soft_limit", "tserver_root_memory_consumption", 
+    "cpu_usage_user", "cpu_usage_system"));
 
   @Override
   public ConnectionBuilder getConnectionBuilder() {
@@ -53,43 +59,20 @@ public class TestYbServersMetrics extends BasePgSQLTest {
   @Override
   protected void customizeMiniClusterBuilder(MiniYBClusterBuilder builder){
     super.customizeMiniClusterBuilder(builder);
-    builder.numTservers(3);
-    builder.replicationFactor(3);
+    builder.numTservers(NUM_TSERVERS);
+    builder.replicationFactor(RF);
     builder.tserverHeartbeatTimeoutMs(7000);
-  }
-
-  // private static int parseYsqlPort(String[] cmds) {
-  //   for (String cmd : cmds) {
-  //     if (cmd.contains("pgsql_proxy_bind_address")) {
-  //       int idx = cmd.indexOf(":");
-  //       return Integer.parseInt(cmd.substring(idx + 1));
-  //     }
-  //   }
-
-  //   return 5433;
-  // }
-
-  // private static int parseYsqlConnMgrPort(String[] cmds) {
-  //   for (String cmd : cmds) {
-  //     if (cmd.contains("ysql_conn_mgr_port")) {
-  //       int idx = cmd.indexOf("=");
-  //       return Integer.parseInt(cmd.substring(idx + 1));
-  //     }
-  //   }
-
-  //   return 5433;
-  // }
-
-  // private int getSmartDriverPortFromTserverFlags(String[] cmds) {
-  //   return isTestRunningWithConnectionManager() == true ?
-  //      parseYsqlConnMgrPort(cmds) : parseYsqlPort(cmds);
-  // }
+  } 
 
   private void assertYbServersMetricsOutput(int expectedRows, int expectedStatusOkRows) throws Exception{
     Connection conn = getConnectionBuilder().connect();
     try {
       Statement st = conn.createStatement();
+      final long startTimeMillis = System.currentTimeMillis();
       ResultSet rs = st.executeQuery("select * from yb_servers_metrics()");
+      final long result = System.currentTimeMillis() - startTimeMillis;
+      // There is a timeout of 5000ms for each RPC call to tserver.
+      AssertionWrappers.assertLessThan(result, Long.valueOf(6000));
       int row_count = 0;
       int ok_count = 0;
       while (rs.next()) {
@@ -101,7 +84,6 @@ public class TestYbServersMetrics extends BasePgSQLTest {
           ++ok_count;
           JSONObject metricsJson = new JSONObject(metrics);
           ArrayList<String> metricKeys = new ArrayList<String>(metricsJson.keySet());
-          ArrayList<String> expectedKeys = new ArrayList<String>(Arrays.asList("node_memory_free", "node_memory_available", "tserver_root_memory_limit", "tserver_root_memory_soft_limit", "tserver_root_memory_consumption", "node_memory_total"));
           AssertionWrappers.assertTrue("Expected keys are not present. Present keys are:" + metricKeys , metricKeys.containsAll(expectedKeys));
         } else {
           AssertionWrappers.assertEquals("{}", metrics);
@@ -119,307 +101,23 @@ public class TestYbServersMetrics extends BasePgSQLTest {
 
   @Test
   public void testYBServersMetricsFunction() throws Exception {
-    assertYbServersMetricsOutput(3,3);
-    // Connection conn = getConnectionBuilder().connect();
-    // Statement st = conn.createStatement();
-    // ResultSet rs = st.executeQuery("select * from yb_servers_metrics()");
-    
+    assertYbServersMetricsOutput(NUM_TSERVERS, NUM_TSERVERS);
 
-    // int row_count = 0;
-    // int ok_count = 0;
-    // while (rs.next()) {
-    //   String uuid = rs.getString(1);
-    //   String metrics = rs.getString(2);
-    //   String status = rs.getString(3);
-    //   String error = rs.getString(4);
-    //   if (status.equals("OK")) {
-    //     ++ok_count;
-    //   }
-    //   ++row_count;
-    // }
-
-    // conn.close();
-    // AssertionWrappers.assertTrue("Expected 3 tservers, found " + row_count, row_count == 3);
-    // AssertionWrappers.assertTrue("Expected status OK for 3 tservers, found " + ok_count, ok_count == 3);
-
+    // add a new tserver
     miniCluster.startTServer(getTServerFlags());
     AssertionWrappers.assertTrue(miniCluster.waitForTabletServers(4));
     waitForTServerHeartbeat();
+    assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS + 1);
 
-    assertYbServersMetricsOutput(4,4);
-
-    // conn = getConnectionBuilder().connect();
-    // st = conn.createStatement();
-    // rs = st.executeQuery("select * from yb_servers_metrics()");
-
-    // row_count = 0;
-    // ok_count = 0;
-    // while (rs.next()) {
-    //   String uuid = rs.getString(1);
-    //   String metrics = rs.getString(2);
-    //   String status = rs.getString(3);
-    //   String error = rs.getString(4);
-    //   if (status.equals("OK")) {
-    //     ++ok_count;
-    //   }
-    //   ++row_count;
-    // }
-    // conn.close();
-    // AssertionWrappers.assertTrue("Expected 4 tservers, found " + row_count, row_count == 4);
-    // AssertionWrappers.assertTrue("Expected status OK for 4 tservers, found " + ok_count, ok_count == 4);
-
-
+    // kill a tserver
     miniCluster.killTabletServerOnHostPort(miniCluster.getTabletServers().keySet().iterator().next());
-    assertYbServersMetricsOutput(4,3);
+    // Initially we will get NUM_TSERVERS + 1 rows, with one of them having status as "ERROR"
+    assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS);
 
-    // conn = getConnectionBuilder().connect();
-    // st = conn.createStatement();
-    // final long begin = System.currentTimeMillis();
-    // rs = st.executeQuery("select * from yb_servers_metrics()");
-    // long end = System.currentTimeMillis();
-    // AssertionWrappers.assertLessThan(end - begin, Long.valueOf(2000));
-    // AtomicReference<SQLException> sqlExceptionWrapper = new AtomicReference<>();
-
-    // runWithTimeout(6000, "yb_servers_metrics()", () -> {
-    //   try {
-    //     rs = st.executeQuery("select * from yb_servers_metrics()");
-    //   } catch (SQLException e) {
-    //     sqlExceptionWrapper.set(e);
-    //   }
-    // });
-    
-
-    // row_count = 0;
-    // ok_count = 0;
-    // while (rs.next()) {
-    //   String uuid = rs.getString(1);
-    //   String metrics = rs.getString(2);
-    //   String status = rs.getString(3);
-    //   String error = rs.getString(4);
-    //   if (status.equals("OK")) {
-    //     ++ok_count;
-    //   } else {
-    //     AssertionWrappers.assertEquals("sample error", error);
-    //   }
-    //   ++row_count;
-    // }
-    // AssertionWrappers.assertTrue("Expected 4 tservers, found " + row_count, row_count == 4);
-    // AssertionWrappers.assertTrue("Expected status OK for 3 tservers, found " + ok_count, ok_count == 3);
-
+    // After the tserver is removed and updated in cache,
+    // we will get NUM_TSERVERS rows, with all of them having status as "OK"
     Thread.sleep(2 * miniCluster.getClusterParameters().getTServerHeartbeatTimeoutMs());
-    assertYbServersMetricsOutput(3,3);
-
-    // conn = getConnectionBuilder().connect();
-    // st = conn.createStatement();
-    // rs = st.executeQuery("select * from yb_servers_metrics()");
-    // row_count = 0;
-    // ok_count = 0;
-    // while (rs.next()) {
-    //   String uuid = rs.getString(1);
-    //   String metrics = rs.getString(2);
-    //   String status = rs.getString(3);
-    //   String error = rs.getString(4);
-    //   if (status.equals("OK")) {
-    //     ++ok_count;
-    //   }
-    //   ++row_count;
-    // }
-    // AssertionWrappers.assertTrue("Expected 3 tservers, found " + row_count, row_count == 3);
-    // AssertionWrappers.assertTrue("Expected status OK for 3 tservers, found " + ok_count, ok_count == 3);
-
-
-    // int cnt = 0;
-    // Map<HostAndPort, MiniYBDaemon> hostPortsDaemonMap = miniCluster.getTabletServers();
-    // Map<String, Integer> hostPorts = new HashMap<>();
-    // for (Map.Entry<HostAndPort, MiniYBDaemon> e : hostPortsDaemonMap.entrySet()) {
-    //   hostPorts.put(e.getKey().getHost(), e.getKey().getPort());
-    // }
-
-    // while (rs.next()) {
-    //   String host = rs.getString(1);
-    //   int port = rs.getInt(2);
-    //   int connections = rs.getInt(3);
-    //   String node_type = rs.getString(4);
-    //   String cloud = rs.getString(5);
-    //   String region = rs.getString(6);
-    //   String zone = rs.getString(7);
-    //   String publicIp = rs.getString(8);
-    //   String uuid = rs.getString(9);
-    //   Integer portInMap = hostPorts.get(host);
-    //   AssertionWrappers.assertNotNull(portInMap);
-    //   HostAndPort hp = HostAndPort.fromParts(host, portInMap);
-    //   MiniYBDaemon daemon = hostPortsDaemonMap.get(hp);
-    //   int pg_port = getSmartDriverPortFromTserverFlags(daemon.getCommandLine());
-
-    //   AssertionWrappers.assertEquals("port should be equal", pg_port, port);
-    //   AssertionWrappers.assertEquals("primary", node_type);
-    //   AssertionWrappers.assertEquals("connections has been hardcoded to 0", 0, connections);
-    //   AssertionWrappers.assertEquals("cloud1", cloud);
-    //   AssertionWrappers.assertEquals("datacenter1", region);
-    //   AssertionWrappers.assertEquals("rack1", zone);
-    //   AssertionWrappers.assertTrue(publicIp.isEmpty());
-    //   AssertionWrappers.assertTrue(!uuid.isEmpty());
-    //   cnt++;
-    // }
-    // AssertionWrappers.assertEquals(
-    //   "expected servers started by minicluster", hostPortsDaemonMap.size(), cnt);
-    // ClusterAwareLoadBalancer clb = ClusterAwareLoadBalancer.instance();
-    // AssertionWrappers.assertNotNull(clb);
-    // List<Connection> connList = new ArrayList<>();
-    // try {
-    //   Map<String, Integer> hostToNumConnections = new HashMap<>();
-    //   for (int i = 0; i < 14; i++) {
-    //     Connection c = getConnectionBuilder().connect();
-    //     connList.add(c);
-    //     String host = ((PgConnection)c).getQueryExecutor().getHostSpec().getHost();
-    //     Integer numConns = 0;
-    //     if (hostToNumConnections.containsKey(host)) {
-    //       numConns = hostToNumConnections.get(host);
-    //       numConns += 1;
-    //     } else {
-    //       numConns = 1;
-    //     }
-    //     hostToNumConnections.put(host, numConns);
-    //   }
-    //   // Add the first connection host port too
-    //   String firstHost = ((PgConnection)connection).getQueryExecutor().getHostSpec().getHost();
-    //   Integer numConns = hostToNumConnections.get(firstHost);
-    //   hostToNumConnections.put(firstHost, numConns+1);
-    //   clb.printHostToConnMap();
-    //   AssertionWrappers.assertEquals(7, hostToNumConnections.size());
-    //   for (Map.Entry<String, Integer> e : hostToNumConnections.entrySet()) {
-    //     AssertionWrappers.assertTrue(e.getValue() >= 2);
-    //   }
-    // } finally {
-    //   for (Connection c : connList) c.close();
-    // }
-    // // Let's close the first connection as well, so that this connection does not interfere
-    // // with the accounting done later in the test when multiple threads try to create the
-    // // connections at the same time.
-    // connection.close();
-    // // Now let's test parallel connection attempts. Even then it should be properly balanced
-    // class ConnectionRunnable implements Runnable {
-    //   volatile Connection conn;
-    //   volatile Exception ex;
-    //   @Override
-    //   public void run() {
-    //     try {
-    //       conn = getConnectionBuilder().connect();
-    //     } catch (Exception e) {
-    //       ex = e;
-    //     }
-    //   }
-    // }
-    // Thread[] threads = new Thread[14];
-    // ConnectionRunnable[] runnables = new ConnectionRunnable[14];
-    // for(int i=0; i< 14; i++) {
-    //   runnables[i] = new ConnectionRunnable();
-    //   threads[i] = new Thread(runnables[i]);
-    // }
-    // for(Thread t : threads) {
-    //   t.start();
-    // }
-    // for(Thread t : threads) {
-    //   t.join();
-    // }
-    // Map<String, Integer> hostToNumConnections = new HashMap<>();
-    // for (int i = 0; i < 14; i++) {
-    //   AssertionWrappers.assertNull(runnables[i].ex);
-    //   Connection c = runnables[i].conn;
-    //   String host = ((PgConnection)c).getQueryExecutor().getHostSpec().getHost();
-    //   Integer numConns;
-    //   if (hostToNumConnections.containsKey(host)) {
-    //     numConns = hostToNumConnections.get(host);
-    //     numConns += 1;
-    //   } else {
-    //     numConns = 1;
-    //   }
-    //   hostToNumConnections.put(host, numConns);
-    //   c.close();
-    // }
-    // for (Map.Entry<String, Integer> e : hostToNumConnections.entrySet()) {
-    //   AssertionWrappers.assertTrue(e.getValue() >= 2);
-    // }
+    assertYbServersMetricsOutput(NUM_TSERVERS, NUM_TSERVERS);
   }
-
-  // @Test
-  // public void TestWithBlacklistedServer() throws Exception{
-
-  //   Map<HostAndPort, MiniYBDaemon> hostPortsDaemonMap = miniCluster.getTabletServers();
-  //   Map<String, Integer> hostPorts = new HashMap<>();
-  //   for (Map.Entry<HostAndPort, MiniYBDaemon> e : hostPortsDaemonMap.entrySet()) {
-  //     hostPorts.put(e.getKey().getHost(), e.getKey().getPort());
-  //   }
-
-  //   Statement st = connection.createStatement();
-  //   st.execute("create table users (id int, name varchar(20))");
-  //   String insertStmt = "insert into users(id, name) select generate_series(1,10000),'Username'";
-  //   st.execute(insertStmt);
-
-  //   ResultSet rs = st.executeQuery("select * from yb_servers()");
-  //   int rows = 0;
-  //   while (rs.next()) {
-  //     ++rows;
-  //   }
-  //   AssertionWrappers.assertTrue("Expected 7 tservers, found " + rows, rows == 7);
-
-  //   Map.Entry<String, Integer> e = hostPorts.entrySet().iterator().next();
-  //   String decommissionedServer = e.getKey() + ":" + String.valueOf(e.getValue());
-  //   LOG.info("Decommissioning/Blacklisting the server: " + decommissionedServer);
-
-  //   // Decommission/Blacklist the server
-  //   runProcess(
-  //     TestUtils.findBinary("yb-admin"),
-  //     "--master_addresses",
-  //     masterAddresses,
-  //     "change_blacklist",
-  //     "ADD",
-  //     decommissionedServer);
-
-  //   rs = st.executeQuery("select * from yb_servers()");
-  //   rows = 0;
-  //   while (rs.next()) {
-  //     ++rows;
-  //   }
-  //   AssertionWrappers.assertTrue("Expected 7 tservers, found " + rows, rows == 7);
-
-  //   AssertionWrappers.assertTrue("Expected 6 tservers not found",
-  //     verifyResultUntil(10, 3000, e.getKey(), 6));
-
-  //   runProcess(
-  //     TestUtils.findBinary("yb-admin"),
-  //     "--master_addresses",
-  //     masterAddresses,
-  //     "change_blacklist",
-  //     "REMOVE",
-  //     decommissionedServer);
-  // }
-
-  // private boolean verifyResultUntil(int retries, int retryIntervalMilis,
-  //   String decommissionedServer, int numTservers) throws SQLException {
-  //   boolean found = false;
-  //   int rows = 0;
-  //   Statement st = connection.createStatement();
-
-  //   for (int i = 0; i < retries; i++) {
-  //     ResultSet rs = st.executeQuery("select * from yb_servers()");
-  //     rows = 0;
-  //     found = false;
-  //     while (rs.next()) {
-  //       ++rows;
-  //       String host = rs.getString(1).trim();
-  //       if (host.contains(decommissionedServer)) {
-  //         found = true;
-  //       }
-  //     }
-  //     if (!found && rows == numTservers) {
-  //       return true;
-  //     }
-  //     try {
-  //       Thread.sleep(retryIntervalMilis);
-  //     } catch (InterruptedException ie) {}
-  //   }
-  //   return !found && rows == numTservers;
-  // }
 
 }

@@ -1549,13 +1549,13 @@ void TabletServer::GetMetrics(const GetMetricsRequestPB* req,
 
   std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
   auto *node_memory_total = resp->mutable_metrics()->Add();
-  node_memory_total->set_name("node_memory_total");
+  node_memory_total->set_name("memory_total");
   node_memory_total->set_value(std::to_string(memory_usage[0]));
   auto *node_memory_free = resp->mutable_metrics()->Add();
-  node_memory_free->set_name("node_memory_free");
+  node_memory_free->set_name("memory_free");
   node_memory_free->set_value(std::to_string(memory_usage[1]));
   auto *node_memory_available = resp->mutable_metrics()->Add();
-  node_memory_available->set_name("node_memory_available");
+  node_memory_available->set_name("memory_available");
   node_memory_available->set_value(std::to_string(memory_usage[2]));
 
   auto root_mem_tracker = MemTracker::GetRootTracker();

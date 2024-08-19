@@ -45,7 +45,7 @@ public class TestYbServersMetrics extends BasePgSQLTest {
   private static final int NUM_TSERVERS = 3;
   private static final int RF = 3;
   private static ArrayList<String> expectedKeys = new ArrayList<String>(Arrays.asList(
-    "node_memory_free", "node_memory_available", "node_memory_total",
+    "memory_free", "memory_available", "memory_total",
     "tserver_root_memory_limit", "tserver_root_memory_soft_limit", "tserver_root_memory_consumption", 
     "cpu_usage_user", "cpu_usage_system"));
 

@@ -557,6 +557,10 @@ Result<vector<uint64_t>> MetricsSnapshotter::GetMemoryUsage() {
     }
   }
   fclose(file);
+  // proc meminfo reports in KB, convert to bytes
+  total_memory *= 1024;
+  free_memory *= 1024;
+  available_memory *= 1024;
 #endif
   vector<uint64_t> ret = {total_memory, free_memory, available_memory};
   return ret;

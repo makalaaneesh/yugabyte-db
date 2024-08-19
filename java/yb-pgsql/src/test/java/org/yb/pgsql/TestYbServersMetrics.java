@@ -64,8 +64,12 @@ public class TestYbServersMetrics extends BasePgSQLTest {
     builder.tserverHeartbeatTimeoutMs(7000);
   } 
 
-  private void assertYbServersMetricsOutput(int expectedRows, int expectedStatusOkRows) throws Exception{
-    Connection conn = getConnectionBuilder().connect();
+  private void assertYbServersMetricsOutput(int expectedRows, int expectedStatusOkRows, int tserverNo) throws Exception{
+    ConnectionBuilder b = getConnectionBuilder();
+    if (tserverNo >= 0){
+      b = b.withTServer(tserverNo);
+    }
+    Connection conn = b.connect();
     try {
       Statement st = conn.createStatement();
       final long startTimeMillis = System.currentTimeMillis();
@@ -101,23 +105,25 @@ public class TestYbServersMetrics extends BasePgSQLTest {
 
   @Test
   public void testYBServersMetricsFunction() throws Exception {
-    assertYbServersMetricsOutput(NUM_TSERVERS, NUM_TSERVERS);
+    assertYbServersMetricsOutput(NUM_TSERVERS, NUM_TSERVERS, -1);
 
     // add a new tserver
     miniCluster.startTServer(getTServerFlags());
     AssertionWrappers.assertTrue(miniCluster.waitForTabletServers(4));
     waitForTServerHeartbeat();
-    assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS + 1);
+    assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS + 1, -1);
 
     // kill a tserver
-    miniCluster.killTabletServerOnHostPort(miniCluster.getTabletServers().keySet().iterator().next());
+    List<HostAndPort> tserverList = new ArrayList<>(miniCluster.getTabletServers().keySet());
+    HostAndPort tserver = tserverList.get(tserverList.size() - 1);
+    miniCluster.killTabletServerOnHostPort(tserver);
     // Initially we will get NUM_TSERVERS + 1 rows, with one of them having status as "ERROR"
-    assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS);
+    assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS, 0); //killed last tserver, so connect to first
 
     // After the tserver is removed and updated in cache,
     // we will get NUM_TSERVERS rows, with all of them having status as "OK"
     Thread.sleep(2 * miniCluster.getClusterParameters().getTServerHeartbeatTimeoutMs());
-    assertYbServersMetricsOutput(NUM_TSERVERS, NUM_TSERVERS);
+    assertYbServersMetricsOutput(NUM_TSERVERS, NUM_TSERVERS, 0);
   }
 
 }

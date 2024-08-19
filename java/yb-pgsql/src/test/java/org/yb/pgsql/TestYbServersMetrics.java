@@ -17,16 +17,12 @@ import com.google.common.net.HostAndPort;
 import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
-import com.yugabyte.ysql.ClusterAwareLoadBalancer;
-import com.yugabyte.jdbc.PgConnection;
 import org.yb.AssertionWrappers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yb.client.TestUtils;
 import org.yb.minicluster.MiniYBClusterBuilder;
-import org.yb.minicluster.MiniYBDaemon;
 import org.yb.YBTestRunner;
 
 import java.sql.Connection;
@@ -34,10 +30,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(value = YBTestRunner.class)
 public class TestYbServersMetrics extends BasePgSQLTest {
@@ -46,7 +39,8 @@ public class TestYbServersMetrics extends BasePgSQLTest {
   private static final int RF = 3;
   private static ArrayList<String> expectedKeys = new ArrayList<String>(Arrays.asList(
     "memory_free", "memory_available", "memory_total",
-    "tserver_root_memory_limit", "tserver_root_memory_soft_limit", "tserver_root_memory_consumption", 
+    "tserver_root_memory_limit", "tserver_root_memory_soft_limit",
+    "tserver_root_memory_consumption",
     "cpu_usage_user", "cpu_usage_system"));
 
   @Override
@@ -62,9 +56,10 @@ public class TestYbServersMetrics extends BasePgSQLTest {
     builder.numTservers(NUM_TSERVERS);
     builder.replicationFactor(RF);
     builder.tserverHeartbeatTimeoutMs(7000);
-  } 
+  }
 
-  private void assertYbServersMetricsOutput(int expectedRows, int expectedStatusOkRows, int tserverNo) throws Exception{
+  private void assertYbServersMetricsOutput(int expectedRows, int expectedStatusOkRows,
+   int tserverNo) throws Exception{
     ConnectionBuilder b = getConnectionBuilder();
     if (tserverNo >= 0){
       b = b.withTServer(tserverNo);
@@ -88,14 +83,19 @@ public class TestYbServersMetrics extends BasePgSQLTest {
           ++ok_count;
           JSONObject metricsJson = new JSONObject(metrics);
           ArrayList<String> metricKeys = new ArrayList<String>(metricsJson.keySet());
-          AssertionWrappers.assertTrue("Expected keys are not present. Present keys are:" + metricKeys , metricKeys.containsAll(expectedKeys));
+          AssertionWrappers.assertTrue("Expected keys are not present. Present keys are:"
+           + metricKeys,
+             metricKeys.containsAll(expectedKeys));
         } else {
           AssertionWrappers.assertEquals("{}", metrics);
         }
         ++row_count;
       }
-      AssertionWrappers.assertTrue("Expected " + expectedRows + " tservers, found " + row_count, row_count == expectedRows);
-      AssertionWrappers.assertTrue("Expected status OK for " + expectedStatusOkRows + " tservers, found " + ok_count, ok_count == expectedStatusOkRows);
+      AssertionWrappers.assertTrue("Expected " + expectedRows + " tservers, found " + row_count,
+         row_count == expectedRows);
+      AssertionWrappers.assertTrue("Expected status OK for " + expectedStatusOkRows +
+      " tservers, found " + ok_count,
+      ok_count == expectedStatusOkRows);
     } catch (SQLException e) {
       throw new RuntimeException("Failed to execute yb_servers_metrics query", e);
     } finally {
@@ -118,7 +118,8 @@ public class TestYbServersMetrics extends BasePgSQLTest {
     HostAndPort tserver = tserverList.get(tserverList.size() - 1);
     miniCluster.killTabletServerOnHostPort(tserver);
     // Initially we will get NUM_TSERVERS + 1 rows, with one of them having status as "ERROR"
-    assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS, 0); //killed last tserver, so connect to first
+    //killed last tserver, so connect to first
+    assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS, 0);
 
     // After the tserver is removed and updated in cache,
     // we will get NUM_TSERVERS rows, with all of them having status as "OK"

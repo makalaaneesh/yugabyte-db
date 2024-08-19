@@ -1726,7 +1726,8 @@ class PgClientServiceImpl::Impl {
       std::shared_ptr<rpc::RpcController> controller = std::make_shared<rpc::RpcController>();
       controller->set_timeout(MonoDelta::FromMilliseconds(5000));
 
-      proxy->GetMetricsAsync(metrics_req, node_resp.get(), controller.get(), [controller, status_promise] {
+      proxy->GetMetricsAsync(metrics_req, node_resp.get(), controller.get(),
+      [controller, status_promise] {
         status_promise->set_value(controller->status());
       });
     }

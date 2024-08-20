@@ -2659,7 +2659,7 @@ YBCStatus YBCServersMetrics(YBCPgServerMetricsInfo** servers_metrics_info, size_
         .uuid = YBCPAllocStdString(server_metrics_info.uuid()),
         .metrics = metrics,
         .metrics_count = metrics_count,
-        .status = YBCPAllocStdString(server_metrics_info.status()),
+        .status = YBCPAllocStdString(PgMetricsInfoStatus_Name(server_metrics_info.status())),
         .error = YBCPAllocStdString(server_metrics_info.error()),
       };
       ++dest;

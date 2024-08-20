@@ -1737,7 +1737,7 @@ class PgClientServiceImpl::Impl {
       tserver::PgServerMetricsInfoPB server_metrics;
       server_metrics.set_uuid(remote_tservers[i]->permanent_uuid());
       if (!s.ok()) {
-        server_metrics.set_status("ERROR");
+        server_metrics.set_status(tserver::PgMetricsInfoStatus::ERROR);
         server_metrics.set_error(s.ToUserMessage());
       } else {
         for (auto &resp_metrics_info : node_resp->metrics()) {
@@ -1745,7 +1745,7 @@ class PgClientServiceImpl::Impl {
           metrics_info->set_name(resp_metrics_info.name());
           metrics_info->set_value(resp_metrics_info.value());
         }
-        server_metrics.set_status("OK");
+        server_metrics.set_status(tserver::PgMetricsInfoStatus::OK);
         server_metrics.set_error("");
       }
       result.emplace_back(std::move(server_metrics));

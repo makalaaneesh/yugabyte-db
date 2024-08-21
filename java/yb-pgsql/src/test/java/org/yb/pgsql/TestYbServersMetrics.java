@@ -74,6 +74,7 @@ public class TestYbServersMetrics extends BasePgSQLTest {
       AssertionWrappers.assertLessThan(result, Long.valueOf(6000));
       int row_count = 0;
       int ok_count = 0;
+      List<String> errors = new ArrayList<String>();
       while (rs.next()) {
         String uuid = rs.getString(1);
         String metrics = rs.getString(2);
@@ -88,13 +89,14 @@ public class TestYbServersMetrics extends BasePgSQLTest {
              metricKeys.containsAll(expectedKeys));
         } else {
           AssertionWrappers.assertEquals("{}", metrics);
+          errors.add(error);
         }
         ++row_count;
       }
       AssertionWrappers.assertTrue("Expected " + expectedRows + " tservers, found " + row_count,
          row_count == expectedRows);
       AssertionWrappers.assertTrue("Expected status OK for " + expectedStatusOkRows +
-      " tservers, found " + ok_count,
+      " tservers, found " + ok_count + ". Errors: " + errors,
       ok_count == expectedStatusOkRows);
     } catch (SQLException e) {
       throw new RuntimeException("Failed to execute yb_servers_metrics query", e);

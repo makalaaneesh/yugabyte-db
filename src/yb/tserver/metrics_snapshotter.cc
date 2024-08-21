@@ -224,9 +224,12 @@ Result<std::vector<double>> MetricsSnapshotter::GetCpuUsageInInterval(int ms) {
       uint64_t total_ticks = cur_ticks2[0] - cur_ticks1[0];
       uint64_t user_ticks = cur_ticks2[1] - cur_ticks1[1];
       uint64_t system_ticks = cur_ticks2[2] - cur_ticks1[2];
-      if (total_ticks <= 0) {
+      if (total_ticks < 0) {
         return STATUS_FORMAT(RuntimeError, "Failed to calculate CPU usage - "
                             "invalid total CPU ticks: $0.", total_ticks);
+      } else if (total_ticks == 0) {
+        cpu_usage.emplace_back(0);
+        cpu_usage.emplace_back(0);
       } else {
         cpu_usage.emplace_back(static_cast<double>(user_ticks) / total_ticks);
         cpu_usage.emplace_back(static_cast<double>(system_ticks) / total_ticks);
@@ -478,7 +481,7 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
 
   if (tserver_metrics_whitelist_.contains(kMetricWhitelistItemCpuUsage)) {
     auto cpu_result = MetricsSnapshotter::GetCpuUsageInInterval(500);
-    if (!cpu_result.ok()){
+    if (!cpu_result.ok()) {
       YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve CPU usage. Error=$0.",
                                                   cpu_result.status());
     } else {

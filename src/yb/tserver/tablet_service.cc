@@ -3106,7 +3106,13 @@ void TabletServiceImpl::CheckTserverTabletHealth(const CheckTserverTabletHealthR
 void TabletServiceImpl::GetMetrics(const GetMetricsRequestPB* req,
                                    GetMetricsResponsePB* resp,
                                    rpc::RpcContext context) {
-  server_->GetMetrics(req, resp);
+  auto result = server_->GetMetrics();
+  if (!result.ok()) {
+    SetupErrorAndRespond(resp->mutable_error(), result.status(), &context);
+    return;
+  }
+  vector<MetricsInfoPB> metrics = result.get();
+  *resp->mutable_metrics() = {metrics.begin(), metrics.end()};
   context.RespondSuccess();
 }
 

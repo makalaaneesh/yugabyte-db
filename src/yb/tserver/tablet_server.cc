@@ -1530,48 +1530,58 @@ Result<std::vector<tablet::TabletStatusPB>> TabletServer::GetLocalTabletsMetadat
   return result;
 }
 
-void TabletServer::GetMetrics(const GetMetricsRequestPB* req,
-                                   GetMetricsResponsePB* resp) const {
+Result<std::vector<MetricsInfoPB>> TabletServer::GetMetrics() const {
+  std::vector<MetricsInfoPB> result;
+
   std::vector<double> cpu_usage = MetricsSnapshotter::GetCpuUsageInInterval(500);
-  auto* cpu_usage_user = resp->mutable_metrics()->Add();
-  cpu_usage_user->set_name("cpu_usage_user");
-  auto* cpu_usage_system = resp->mutable_metrics()->Add();
-  cpu_usage_system->set_name("cpu_usage_system");
+  MetricsInfoPB cpu_usage_user;
+  cpu_usage_user.set_name("cpu_usage_user");
+  MetricsInfoPB cpu_usage_system;
+  cpu_usage_system.set_name("cpu_usage_system");
   if (cpu_usage.size() != 2) {
     LOG(WARNING) << Format("Failed to retrieve CPU usage. Got=$0.", cpu_usage);
-    cpu_usage_user->set_value("-1");
-    cpu_usage_system->set_value("-1");
+    cpu_usage_user.set_value("-1");
+    cpu_usage_system.set_value("-1");
   } else {
-    cpu_usage_user->set_value(std::to_string(cpu_usage[0]));
-    cpu_usage_system->set_value(std::to_string(cpu_usage[1]));
+    cpu_usage_user.set_value(std::to_string(cpu_usage[0]));
+    cpu_usage_system.set_value(std::to_string(cpu_usage[1]));
   }
-
+  result.emplace_back(std::move(cpu_usage_user));
+  result.emplace_back(std::move(cpu_usage_system));
 
   std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
-  auto* node_memory_total = resp->mutable_metrics()->Add();
-  node_memory_total->set_name("memory_total");
-  node_memory_total->set_value(std::to_string(memory_usage[0]));
-  auto* node_memory_free = resp->mutable_metrics()->Add();
-  node_memory_free->set_name("memory_free");
-  node_memory_free->set_value(std::to_string(memory_usage[1]));
-  auto* node_memory_available = resp->mutable_metrics()->Add();
-  node_memory_available->set_name("memory_available");
-  node_memory_available->set_value(std::to_string(memory_usage[2]));
+  MetricsInfoPB node_memory_total;
+  node_memory_total.set_name("memory_total");
+  node_memory_total.set_value(std::to_string(memory_usage[0]));
+  result.emplace_back(std::move(node_memory_total));
+  MetricsInfoPB  node_memory_free;
+  node_memory_free.set_name("memory_free");
+  node_memory_free.set_value(std::to_string(memory_usage[1]));
+  result.emplace_back(std::move(node_memory_free));
+  MetricsInfoPB  node_memory_available;
+  node_memory_available.set_name("memory_available");
+  node_memory_available.set_value(std::to_string(memory_usage[2]));
+  result.emplace_back(std::move(node_memory_available));
 
   auto root_mem_tracker = MemTracker::GetRootTracker();
   int64_t tserver_root_memory_consumption = root_mem_tracker->consumption();
   int64_t tserver_root_memory_limit = root_mem_tracker->limit();
   int64_t tserver_root_memory_soft_limit = root_mem_tracker->soft_limit();
-  auto* tserver_root_memory_consumption_metric = resp->mutable_metrics()->Add();
-  tserver_root_memory_consumption_metric->set_name("tserver_root_memory_consumption");
-  tserver_root_memory_consumption_metric->set_value(
+  MetricsInfoPB tserver_root_memory_consumption_metric;
+  tserver_root_memory_consumption_metric.set_name("tserver_root_memory_consumption");
+  tserver_root_memory_consumption_metric.set_value(
     std::to_string(tserver_root_memory_consumption));
-  auto* tserver_root_memory_limit_metric = resp->mutable_metrics()->Add();
-  tserver_root_memory_limit_metric->set_name("tserver_root_memory_limit");
-  tserver_root_memory_limit_metric->set_value(std::to_string(tserver_root_memory_limit));
-  auto* tserver_root_memory_soft_limit_metric = resp->mutable_metrics()->Add();
-  tserver_root_memory_soft_limit_metric->set_name("tserver_root_memory_soft_limit");
-  tserver_root_memory_soft_limit_metric->set_value(std::to_string(tserver_root_memory_soft_limit));
+  result.emplace_back(std::move(tserver_root_memory_consumption_metric));
+  MetricsInfoPB tserver_root_memory_limit_metric;
+  tserver_root_memory_limit_metric.set_name("tserver_root_memory_limit");
+  tserver_root_memory_limit_metric.set_value(std::to_string(tserver_root_memory_limit));
+  result.emplace_back(std::move(tserver_root_memory_limit_metric));
+  MetricsInfoPB tserver_root_memory_soft_limit_metric;
+  tserver_root_memory_soft_limit_metric.set_name("tserver_root_memory_soft_limit");
+  tserver_root_memory_soft_limit_metric.set_value(std::to_string(tserver_root_memory_soft_limit));
+  result.emplace_back(std::move(tserver_root_memory_soft_limit_metric));
+
+  return result;
 }
 
 void TabletServer::SetCronLeaderLease(MonoTime cron_leader_lease_end) {

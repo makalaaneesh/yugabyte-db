@@ -189,6 +189,7 @@ message GetMetricsRequestPB {
 
 message GetMetricsResponsePB {
   repeated MetricsInfoPB metrics  = 1;
+  optional TabletServerErrorPB error = 2;
 }
 
 message MetricsInfoPB {

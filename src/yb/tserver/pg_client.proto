@@ -977,11 +977,6 @@ message PgServerMetricsInfoPB {
   string error = 4;
 }
 
-//message PgMetricsInfoPB {
-//  string name = 1;
-//  string value = 2;
-//}
-
 enum PgMetricsInfoStatus {
   OK = 0;
   ERROR = 1;

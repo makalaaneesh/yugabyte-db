@@ -192,12 +192,6 @@ message GetMetricsResponsePB {
   optional TabletServerErrorPB error = 2;
 }
 
-//message MetricsInfoPB {
-//  required string name = 1;
-//  required string value = 2;
-//}
-
-
 message GetLogLocationRequestPB {
 }
 

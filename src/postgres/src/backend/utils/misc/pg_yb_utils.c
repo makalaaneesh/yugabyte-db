@@ -3631,27 +3631,7 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 		memset(nulls, 0, sizeof(nulls));
 
 		values[0] = CStringGetTextDatum(metricsInfo->uuid);
-		// creating jsonb column for metrics
-		// JsonbParseState *state = NULL;
-		// JsonbValue result;
-		// JsonbValue key;
-		// JsonbValue value;
-		// pushJsonbValue(&state, WJB_BEGIN_OBJECT, NULL);
-		// for (int j = 0; j < metricsInfo->metrics_count; j++) {
-		// 	key.type = jbvString;
-		// 	key.val.string.val = (char *)metricsInfo->metrics[j].name;
-		// 	key.val.string.len = strlen(metricsInfo->metrics[j].name);
-		// 	pushJsonbValue(&state, WJB_KEY, &key);
-
-		// 	value.type = jbvString;
-		// 	value.val.string.val = (char *)metricsInfo->metrics[j].value;
-		// 	value.val.string.len = strlen(metricsInfo->metrics[j].value);
-		// 	pushJsonbValue(&state, WJB_VALUE, &value);
-		// }
-		// result = *pushJsonbValue(&state, WJB_END_OBJECT, NULL);
-		// Jsonb *jsonb = JsonbValueToJsonb(&result);
 		values[1] = getMetricsAsJsonbDatum(metricsInfo->metrics, metricsInfo->metrics_count);
-
 		values[2] = CStringGetTextDatum(metricsInfo->status);
 		values[3] = CStringGetTextDatum(metricsInfo->error);
 

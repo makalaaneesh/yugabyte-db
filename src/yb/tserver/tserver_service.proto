@@ -188,14 +188,14 @@ message GetMetricsRequestPB {
 }
 
 message GetMetricsResponsePB {
-  repeated MetricsInfoPB metrics  = 1;
+  repeated TserverMetricsInfoPB metrics  = 1;
   optional TabletServerErrorPB error = 2;
 }
 
-message MetricsInfoPB {
-  required string name = 1;
-  required string value = 2;
-}
+//message MetricsInfoPB {
+//  required string name = 1;
+//  required string value = 2;
+//}
 
 
 message GetLogLocationRequestPB {

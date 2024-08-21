@@ -1743,11 +1743,13 @@ class PgClientServiceImpl::Impl {
         server_metrics.set_status(tserver::PgMetricsInfoStatus::ERROR);
         server_metrics.set_error(node_resp->error().status().message());
       } else {
-        for (auto &resp_metrics_info : node_resp->metrics()) {
-          tserver::PgMetricsInfoPB *metrics_info = server_metrics.mutable_metrics()->Add();
-          metrics_info->set_name(resp_metrics_info.name());
-          metrics_info->set_value(resp_metrics_info.value());
-        }
+        server_metrics.mutable_metrics()->Swap(node_resp->mutable_metrics());
+        // node_resp->mutable_metrics()->Swap(server_metrics.mutable_metrics());
+        // for (auto &resp_metrics_info : node_resp->metrics()) {
+        //   tserver::PgMetricsInfoPB *metrics_info = server_metrics.mutable_metrics()->Add();
+        //   metrics_info->set_name(resp_metrics_info.name());
+        //   metrics_info->set_value(resp_metrics_info.value());
+        // }
         server_metrics.set_status(tserver::PgMetricsInfoStatus::OK);
         server_metrics.set_error("");
       }

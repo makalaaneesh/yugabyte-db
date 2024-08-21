@@ -3111,7 +3111,7 @@ void TabletServiceImpl::GetMetrics(const GetMetricsRequestPB* req,
     SetupErrorAndRespond(resp->mutable_error(), result.status(), &context);
     return;
   }
-  vector<MetricsInfoPB> metrics = result.get();
+  vector<TserverMetricsInfoPB> metrics = result.get();
   *resp->mutable_metrics() = {metrics.begin(), metrics.end()};
   context.RespondSuccess();
 }

@@ -107,7 +107,7 @@ class MasterTabletServer : public tserver::TabletServerIf,
 
   virtual Result<std::vector<tablet::TabletStatusPB>> GetLocalTabletsMetadata() const override;
 
-  virtual Result<std::vector<tserver::MetricsInfoPB>> GetMetrics() const override;
+  virtual Result<std::vector<TserverMetricsInfoPB>> GetMetrics() const override;
 
  private:
   Master* master_ = nullptr;

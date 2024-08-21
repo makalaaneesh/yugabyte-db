@@ -212,7 +212,6 @@ Status MetricsSnapshotter::Stop() {
 
 Result<std::vector<double>> MetricsSnapshotter::GetCpuUsageInInterval(int ms) {
   std::vector<double> cpu_usage;
-
   auto cur_ticks1 = VERIFY_RESULT(GetCpuUsage());
   bool get_cpu_success = std::all_of(
       cur_ticks1.begin(), cur_ticks1.end(), [](bool v) { return v > 0; });
@@ -226,22 +225,20 @@ Result<std::vector<double>> MetricsSnapshotter::GetCpuUsageInInterval(int ms) {
       uint64_t user_ticks = cur_ticks2[1] - cur_ticks1[1];
       uint64_t system_ticks = cur_ticks2[2] - cur_ticks1[2];
       if (total_ticks <= 0) {
-        YB_LOG_EVERY_N_SECS(ERROR, 120) << Format("Failed to calculate CPU usage - "
-                                                  "invalid total CPU ticks: $0.", total_ticks);
+        return STATUS_FORMAT(RuntimeError, "Failed to calculate CPU usage - "
+                            "invalid total CPU ticks: $0.", total_ticks);
       } else {
         cpu_usage.emplace_back(static_cast<double>(user_ticks) / total_ticks);
         cpu_usage.emplace_back(static_cast<double>(system_ticks) / total_ticks);
       }
     } else {
-      YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve cpu ticks. Got "
-                                                  "[total_ticks, user-ticks, system_ticks]=$0.",
-                                                  cur_ticks2);
+      return STATUS_FORMAT(RuntimeError, "Failed to retrieve CPU ticks. Got "
+                          "[total_ticks, user-ticks, system_ticks]=$0.", cur_ticks2);
     }
 
   } else {
-    YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve cpu ticks. Got "
-                                                  "[total_ticks, user-ticks, system_ticks]=$0.",
-                                                  cur_ticks1);
+    return STATUS_FORMAT(RuntimeError, "Failed to retrieve CPU ticks. Got "
+                          "[total_ticks, user-ticks, system_ticks]=$0.", cur_ticks1);
   }
   return cpu_usage;
 
@@ -480,11 +477,12 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
   }
 
   if (tserver_metrics_whitelist_.contains(kMetricWhitelistItemCpuUsage)) {
-    std::vector<double> cpu_usage = VERIFY_RESULT(MetricsSnapshotter::GetCpuUsageInInterval(500));
-    if (cpu_usage.size() != 2) {
-      YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve CPU usage. Got=$0.",
-                                                  cpu_usage);
+    auto cpu_result = MetricsSnapshotter::GetCpuUsageInInterval(500);
+    if (!cpu_result.ok()){
+      YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve CPU usage. Error=$0.",
+                                                  cpu_result.status());
     } else {
+      std::vector<double> cpu_usage = cpu_result.get();
       double cpu_usage_user = cpu_usage[0];
       double cpu_usage_system = cpu_usage[1];
       // The value column is type bigint, so store real value in details.

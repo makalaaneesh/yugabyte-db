@@ -1739,6 +1739,9 @@ class PgClientServiceImpl::Impl {
       if (!s.ok()) {
         server_metrics.set_status(tserver::PgMetricsInfoStatus::ERROR);
         server_metrics.set_error(s.ToUserMessage());
+      } else if (node_resp->has_error()) {
+        server_metrics.set_status(tserver::PgMetricsInfoStatus::ERROR);
+        server_metrics.set_error(node_resp->error().status().message());
       } else {
         for (auto &resp_metrics_info : node_resp->metrics()) {
           tserver::PgMetricsInfoPB *metrics_info = server_metrics.mutable_metrics()->Add();

@@ -1549,7 +1549,7 @@ Result<std::vector<MetricsInfoPB>> TabletServer::GetMetrics() const {
   result.emplace_back(std::move(cpu_usage_user));
   result.emplace_back(std::move(cpu_usage_system));
 
-  std::vector<uint64_t> memory_usage = CHECK_RESULT(MetricsSnapshotter::GetMemoryUsage());
+  std::vector<uint64_t> memory_usage = VERIFY_RESULT(MetricsSnapshotter::GetMemoryUsage());
   MetricsInfoPB node_memory_total;
   node_memory_total.set_name("memory_total");
   node_memory_total.set_value(std::to_string(memory_usage[0]));

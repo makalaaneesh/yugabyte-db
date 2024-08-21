@@ -1533,19 +1533,13 @@ Result<std::vector<tablet::TabletStatusPB>> TabletServer::GetLocalTabletsMetadat
 Result<std::vector<MetricsInfoPB>> TabletServer::GetMetrics() const {
   std::vector<MetricsInfoPB> result;
 
-  std::vector<double> cpu_usage = MetricsSnapshotter::GetCpuUsageInInterval(500);
+  std::vector<double> cpu_usage = VERIFY_RESULT(MetricsSnapshotter::GetCpuUsageInInterval(500));
   MetricsInfoPB cpu_usage_user;
   cpu_usage_user.set_name("cpu_usage_user");
   MetricsInfoPB cpu_usage_system;
   cpu_usage_system.set_name("cpu_usage_system");
-  if (cpu_usage.size() != 2) {
-    LOG(WARNING) << Format("Failed to retrieve CPU usage. Got=$0.", cpu_usage);
-    cpu_usage_user.set_value("-1");
-    cpu_usage_system.set_value("-1");
-  } else {
-    cpu_usage_user.set_value(std::to_string(cpu_usage[0]));
-    cpu_usage_system.set_value(std::to_string(cpu_usage[1]));
-  }
+  cpu_usage_user.set_value(std::to_string(cpu_usage[0]));
+  cpu_usage_system.set_value(std::to_string(cpu_usage[1]));
   result.emplace_back(std::move(cpu_usage_user));
   result.emplace_back(std::move(cpu_usage_system));
 

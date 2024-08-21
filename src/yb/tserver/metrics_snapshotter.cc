@@ -210,15 +210,15 @@ Status MetricsSnapshotter::Stop() {
   return thread_->Stop();
 }
 
-std::vector<double> MetricsSnapshotter::GetCpuUsageInInterval(int ms) {
+Result<std::vector<double>> MetricsSnapshotter::GetCpuUsageInInterval(int ms) {
   std::vector<double> cpu_usage;
 
-  auto cur_ticks1 = CHECK_RESULT(GetCpuUsage());
+  auto cur_ticks1 = VERIFY_RESULT(GetCpuUsage());
   bool get_cpu_success = std::all_of(
       cur_ticks1.begin(), cur_ticks1.end(), [](bool v) { return v > 0; });
   if (get_cpu_success) {
     std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-    auto cur_ticks2 = CHECK_RESULT(GetCpuUsage());
+    auto cur_ticks2 = VERIFY_RESULT(GetCpuUsage());
     get_cpu_success = std::all_of(
         cur_ticks2.begin(), cur_ticks2.end(), [](bool v) { return v > 0; });
     if (get_cpu_success) {
@@ -480,7 +480,7 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
   }
 
   if (tserver_metrics_whitelist_.contains(kMetricWhitelistItemCpuUsage)) {
-    std::vector<double> cpu_usage = MetricsSnapshotter::GetCpuUsageInInterval(500);
+    std::vector<double> cpu_usage = VERIFY_RESULT(MetricsSnapshotter::GetCpuUsageInInterval(500));
     if (cpu_usage.size() != 2) {
       YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve CPU usage. Got=$0.",
                                                   cpu_usage);

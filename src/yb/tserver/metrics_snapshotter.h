@@ -33,7 +33,7 @@ class MetricsSnapshotter {
   Status Stop();
 
   ~MetricsSnapshotter();
-  static std::vector<double> GetCpuUsageInInterval(int ms);
+  static Result<std::vector<double>> GetCpuUsageInInterval(int ms);
   static Result<std::vector<uint64_t>> GetMemoryUsage();
 
  private:

@@ -788,8 +788,6 @@ typedef struct PgServerMetricsInfo {
   const char* error;
 } YBCPgServerMetricsInfo;
 
-
-
 typedef struct PgExplicitRowLockParams {
   int rowmark;
   int pg_wait_policy;

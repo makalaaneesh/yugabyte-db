@@ -17,7 +17,6 @@ import com.google.common.net.HostAndPort;
 import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.yb.AssertionWrappers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -29,8 +28,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
+
+import static org.yb.AssertionWrappers.*;
 
 @RunWith(value = YBTestRunner.class)
 public class TestYbServersMetrics extends BasePgSQLTest {
@@ -71,7 +71,7 @@ public class TestYbServersMetrics extends BasePgSQLTest {
       ResultSet rs = st.executeQuery("select * from yb_servers_metrics()");
       final long result = System.currentTimeMillis() - startTimeMillis;
       // There is a timeout of 5000ms for each RPC call to tserver.
-      AssertionWrappers.assertLessThan(result, Long.valueOf(6000));
+      assertLessThan(result, Long.valueOf(6000));
       int row_count = 0;
       int ok_count = 0;
       List<String> errors = new ArrayList<String>();
@@ -84,20 +84,17 @@ public class TestYbServersMetrics extends BasePgSQLTest {
           ++ok_count;
           JSONObject metricsJson = new JSONObject(metrics);
           ArrayList<String> metricKeys = new ArrayList<String>(metricsJson.keySet());
-          AssertionWrappers.assertTrue("Expected keys are not present. Present keys are:"
+          assertTrue("Expected keys are not present. Present keys are:"
            + metricKeys,
              metricKeys.containsAll(expectedKeys));
         } else {
-          AssertionWrappers.assertEquals("{}", metrics);
+          assertEquals("{}", metrics);
           errors.add(error);
         }
         ++row_count;
       }
-      AssertionWrappers.assertTrue("Expected " + expectedRows + " tservers, found " + row_count,
-         row_count == expectedRows);
-      AssertionWrappers.assertTrue("Expected status OK for " + expectedStatusOkRows +
-      " tservers, found " + ok_count + ". Errors: " + errors,
-      ok_count == expectedStatusOkRows);
+      assertEquals("Unexpected tservers count", expectedRows, row_count);
+      assertEquals("Unexpected OK tservers count. Errors: "+ errors, expectedStatusOkRows, ok_count);
     } catch (SQLException e) {
       throw new RuntimeException("Failed to execute yb_servers_metrics query", e);
     } finally {
@@ -111,7 +108,7 @@ public class TestYbServersMetrics extends BasePgSQLTest {
 
     // add a new tserver
     miniCluster.startTServer(getTServerFlags());
-    AssertionWrappers.assertTrue(miniCluster.waitForTabletServers(4));
+    assertTrue(miniCluster.waitForTabletServers(4));
     waitForTServerHeartbeat();
     assertYbServersMetricsOutput(NUM_TSERVERS + 1, NUM_TSERVERS + 1, -1);
 

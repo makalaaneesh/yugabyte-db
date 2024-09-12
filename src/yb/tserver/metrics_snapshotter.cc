@@ -187,6 +187,10 @@ class MetricsSnapshotter::Thread {
   // Tokens from FLAGS_metrics_snapshotter_table_metrics_whitelist.
   std::unordered_set<std::string> table_metrics_whitelist_;
 
+  // Used to calculate CPU usage if enabled. Stores {total_ticks, user_ticks, system_ticks}.
+  vector<uint64_t> prev_ticks_ = {0, 0, 0};
+  bool first_run_cpu_ticks_ = true;
+
   TabletServerOptions opts_;
 
   DISALLOW_COPY_AND_ASSIGN(Thread);
@@ -480,27 +484,49 @@ Status MetricsSnapshotter::Thread::DoMetricsSnapshot() {
   }
 
   if (tserver_metrics_whitelist_.contains(kMetricWhitelistItemCpuUsage)) {
-    auto cpu_result = MetricsSnapshotter::GetCpuUsageInInterval(500);
-    if (!cpu_result.ok()) {
-      YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve CPU usage. Error=$0.",
-                                                  cpu_result.status());
-    } else {
-      std::vector<double> cpu_usage = cpu_result.get();
-      double cpu_usage_user = cpu_usage[0];
-      double cpu_usage_system = cpu_usage[1];
-      // The value column is type bigint, so store real value in details.
-      rapidjson::Document details;
-      details.SetObject();
-      details.AddMember("value", cpu_usage_user, details.GetAllocator());
-      RETURN_NOT_OK(DoPrometheusMetricsSnapshot(table, session, "table",
-                      server_->permanent_uuid(), "cpu_usage_user", 1000000 * cpu_usage_user,
-                      &details));
+    // Store the {total_ticks, user_ticks, and system_ticks}
+    auto cur_ticks = CHECK_RESULT(MetricsSnapshotter::GetCpuUsage());
+    bool get_cpu_success = std::all_of(
+        cur_ticks.begin(), cur_ticks.end(), [](bool v) { return v > 0; });
+    if (get_cpu_success && first_run_cpu_ticks_) {
+      prev_ticks_ = cur_ticks;
+      first_run_cpu_ticks_ = false;
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      cur_ticks = CHECK_RESULT(MetricsSnapshotter::GetCpuUsage());
+      get_cpu_success = std::all_of(
+          cur_ticks.begin(), cur_ticks.end(), [](bool v) { return v > 0; });
+    }
 
-      details.RemoveAllMembers();
-      details.AddMember("value", cpu_usage_system, details.GetAllocator());
-      RETURN_NOT_OK(DoPrometheusMetricsSnapshot(table, session, "table",
-                      server_->permanent_uuid(), "cpu_usage_system", 1000000 * cpu_usage_system,
-                      &details));
+    if (get_cpu_success) {
+      uint64_t total_ticks = cur_ticks[0] - prev_ticks_[0];
+      uint64_t user_ticks = cur_ticks[1] - prev_ticks_[1];
+      uint64_t system_ticks = cur_ticks[2] - prev_ticks_[2];
+      prev_ticks_ = cur_ticks;
+      if (total_ticks <= 0) {
+        YB_LOG_EVERY_N_SECS(ERROR, 120) << Format("Failed to calculate CPU usage - "
+                                                 "invalid total CPU ticks: $0.", total_ticks);
+      } else {
+        double cpu_usage_user = static_cast<double>(user_ticks) / total_ticks;
+        double cpu_usage_system = static_cast<double>(system_ticks) / total_ticks;
+
+        // The value column is type bigint, so store real value in details.
+        rapidjson::Document details;
+        details.SetObject();
+        details.AddMember("value", cpu_usage_user, details.GetAllocator());
+        RETURN_NOT_OK(DoPrometheusMetricsSnapshot(table, session, "table",
+                        server_->permanent_uuid(), "cpu_usage_user", 1000000 * cpu_usage_user,
+                        &details));
+
+        details.RemoveAllMembers();
+        details.AddMember("value", cpu_usage_system, details.GetAllocator());
+        RETURN_NOT_OK(DoPrometheusMetricsSnapshot(table, session, "table",
+                        server_->permanent_uuid(), "cpu_usage_system", 1000000 * cpu_usage_system,
+                        &details));
+      }
+    } else {
+      YB_LOG_EVERY_N_SECS(WARNING, 120) << Format("Failed to retrieve cpu ticks. Got "
+                                                  "[total_ticks, user-ticks, system_ticks]=$0.",
+                                                  cur_ticks);
     }
   }
 

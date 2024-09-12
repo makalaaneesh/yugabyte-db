@@ -228,7 +228,7 @@ Result<std::vector<double>> MetricsSnapshotter::GetCpuUsageInInterval(int ms) {
   auto cur_ticks2 = VERIFY_RESULT(GetCpuUsage());
   get_cpu_success = std::all_of(
       cur_ticks2.begin(), cur_ticks2.end(), [](uint64_t v) { return v > 0; });
-  if (!get_cpu_success){
+  if (!get_cpu_success) {
     return STATUS_FORMAT(RuntimeError, "Failed to retrieve CPU ticks. Got "
                         "[total_ticks, user-ticks, system_ticks]=$0.", cur_ticks2);
   }

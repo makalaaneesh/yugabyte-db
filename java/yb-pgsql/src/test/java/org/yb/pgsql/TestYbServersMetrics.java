@@ -94,7 +94,7 @@ public class TestYbServersMetrics extends BasePgSQLTest {
         ++row_count;
       }
       assertEquals("Unexpected tservers count", expectedRows, row_count);
-      assertEquals("Unexpected OK tservers count. Errors: "+ errors, expectedStatusOkRows, ok_count);
+      assertEquals("Unexpected OK tserver count. Errors: "+ errors, expectedStatusOkRows, ok_count);
     } catch (SQLException e) {
       throw new RuntimeException("Failed to execute yb_servers_metrics query", e);
     } finally {

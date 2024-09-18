@@ -3549,7 +3549,7 @@ yb_local_tablets(PG_FUNCTION_ARGS)
 	return (Datum) 0;
 }
 
-static Datum getMetricsAsJsonbDatum(YBCMetricsInfo* metrics, size_t metricsCount){
+static Datum GetMetricsAsJsonbDatum(YBCMetricsInfo* metrics, size_t metricsCount){
 	JsonbParseState *state = NULL;
 	JsonbValue result;
 	JsonbValue key;
@@ -3631,7 +3631,7 @@ yb_servers_metrics(PG_FUNCTION_ARGS)
 		memset(nulls, 0, sizeof(nulls));
 
 		values[0] = CStringGetTextDatum(metricsInfo->uuid);
-		values[1] = getMetricsAsJsonbDatum(metricsInfo->metrics, metricsInfo->metrics_count);
+		values[1] = GetMetricsAsJsonbDatum(metricsInfo->metrics, metricsInfo->metrics_count);
 		values[2] = CStringGetTextDatum(metricsInfo->status);
 		values[3] = CStringGetTextDatum(metricsInfo->error);
 

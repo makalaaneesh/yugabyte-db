@@ -7,7 +7,7 @@ BEGIN;
     pronargs, pronargdefaults, prorettype, proargtypes, proallargtypes, proargmodes,
     proargnames, proargdefaults, protrftypes, prosrc, probin, proconfig, proacl
   ) VALUES (
-    8069, 'yb_servers_metrics', 11, 10, 12, 1, 10, 0, '-', 'f', false,
+    8071, 'yb_servers_metrics', 11, 10, 12, 1, 10, 0, '-', 'f', false,
     false, true, true, 'v', 'r', 0, 0, 2249, '', '{25,3802,25,25}',
     '{o,o,o,o}', '{uuid,metrics,status,error}',
     NULL, NULL, 'yb_servers_metrics', NULL, NULL, NULL)
@@ -19,12 +19,12 @@ BEGIN;
   BEGIN
     IF NOT EXISTS (
       SELECT FROM pg_catalog.pg_depend
-        WHERE refclassid = 1255 AND refobjid = 8069
+        WHERE refclassid = 1255 AND refobjid = 8071
     ) THEN
       INSERT INTO pg_catalog.pg_depend (
         classid, objid, objsubid, refclassid, refobjid, refobjsubid, deptype
       ) VALUES
-        (0, 0, 0, 1255, 8069, 0, 'p');
+        (0, 0, 0, 1255, 8071, 0, 'p');
     END IF;
   END $$;
 COMMIT;

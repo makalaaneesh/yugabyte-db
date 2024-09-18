@@ -138,6 +138,7 @@ service TabletServerService {
       returns (ReleaseObjectLockResponsePB);
 
   rpc GetMetrics(GetMetricsRequestPB) returns (GetMetricsResponsePB);
+}
 
 // Note: Either among transactions_by_tablet or transaction_ids should be set. Both the fields
 // shouldn't be set together nor should be left empty together.
